@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Info, LoaderCircle, Plus, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { LoaderCircle, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { AccountCard } from "@/components/account-card";
@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { AccountUsage } from "@/lib/accounts/account-usage";
 
@@ -30,7 +29,6 @@ export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[]
   const [accounts, setAccounts] = useState(initialAccounts);
   const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [label, setLabel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [login, setLogin] = useState<LoginPrompt | null>(null);
 
@@ -70,7 +68,6 @@ export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[]
         toast.success("ChatGPTアカウントを追加しました");
         setDialogOpen(false);
         setLogin(null);
-        setLabel("");
         await refresh(true);
       } else if (result.status === "failed") {
         window.clearInterval(timer);
@@ -80,14 +77,13 @@ export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[]
     return () => window.clearInterval(timer);
   }, [login, refresh]);
 
-  async function addAccount(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function addAccount() {
     setSubmitting(true);
     try {
       const response = await fetch("/api/accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ label }),
+        body: JSON.stringify({}),
       });
       const result = (await response.json()) as LoginPrompt & { error?: string };
       if (!response.ok) throw new Error(result.error);
@@ -100,16 +96,11 @@ export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[]
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-10 lg:px-10">
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">残高</h1>
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            Codex と Work は同じ利用上限を共有しています。
-            <Info className="size-4" aria-hidden="true" />
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <>
+      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex h-16 w-full items-center justify-between px-6 lg:px-10">
+          <p className="font-semibold tracking-tight">Codex Usage</p>
+          <div className="flex gap-2">
           <Button variant="outline" onClick={() => void refresh()} disabled={refreshing}>
             <RefreshCw className={refreshing ? "animate-spin" : ""} />
             更新
@@ -145,27 +136,20 @@ export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[]
                   </p>
                 </div>
               ) : (
-                <form onSubmit={addAccount} className="space-y-4">
-                  <Input
-                    value={label}
-                    onChange={(event) => setLabel(event.target.value)}
-                    placeholder="例: 個人 Plus"
-                    aria-label="アカウント名"
-                    required
-                  />
-                  <DialogFooter>
-                    <Button type="submit" disabled={submitting}>
+                <DialogFooter>
+                  <Button type="button" onClick={() => void addAccount()} disabled={submitting}>
                       {submitting ? <LoaderCircle className="animate-spin" /> : null}
                       ログインを開始
-                    </Button>
-                  </DialogFooter>
-                </form>
+                  </Button>
+                </DialogFooter>
               )}
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </header>
 
+      <main className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-7xl px-6 py-8 lg:px-10">
       {accounts.length ? (
         <div className="space-y-8">
           {accounts.map((account, index) => (
@@ -183,6 +167,7 @@ export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[]
           </p>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }

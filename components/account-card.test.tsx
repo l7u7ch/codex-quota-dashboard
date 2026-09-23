@@ -5,7 +5,6 @@ import { AccountCard } from "@/components/account-card";
 
 const account = {
   id: "account-1",
-  label: "個人 Plus",
   email: "me@example.com",
   planType: "plus",
   status: "ready" as const,
@@ -31,7 +30,6 @@ describe("AccountCard", () => {
   it("renders the official-style remaining quota for one account", () => {
     render(<AccountCard account={account} />);
 
-    expect(screen.getByText("個人 Plus")).toBeInTheDocument();
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
     expect(screen.getByText("5時間の使用制限")).toBeInTheDocument();
     expect(screen.getByText("週間利用上限")).toBeInTheDocument();

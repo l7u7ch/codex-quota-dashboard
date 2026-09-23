@@ -34,7 +34,7 @@ export function AccountCard({ account }: { account: AccountUsage }) {
         <div>
           <div className="flex items-center gap-2">
             <h2 id={`account-${account.id}`} className="font-semibold">
-              {account.label}
+              {account.email ?? "認証中のアカウント"}
             </h2>
             {account.planType ? (
               <Badge variant="secondary" className="uppercase">
@@ -42,9 +42,6 @@ export function AccountCard({ account }: { account: AccountUsage }) {
               </Badge>
             ) : null}
           </div>
-          {account.email ? (
-            <p className="text-sm text-muted-foreground">{account.email}</p>
-          ) : null}
         </div>
       </div>
 

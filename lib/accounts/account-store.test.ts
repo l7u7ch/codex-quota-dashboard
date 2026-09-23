@@ -10,19 +10,12 @@ describe("AccountStore", () => {
     const root = await mkdtemp(path.join(tmpdir(), "codex-dashboard-"));
     const store = new AccountStore(root);
 
-    const first = await store.create("個人 Plus");
-    const second = await store.create("研究用");
+    const first = await store.create();
+    const second = await store.create();
 
     expect(first.id).not.toBe(second.id);
     expect(first.codexHome).toBe(path.join(root, "profiles", first.id));
     expect(second.codexHome).toBe(path.join(root, "profiles", second.id));
     await expect(store.list()).resolves.toEqual([first, second]);
-  });
-
-  it("rejects blank account labels", async () => {
-    const root = await mkdtemp(path.join(tmpdir(), "codex-dashboard-"));
-    const store = new AccountStore(root);
-
-    await expect(store.create("   ")).rejects.toThrow("アカウント名を入力してください");
   });
 });

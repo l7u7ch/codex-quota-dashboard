@@ -8,7 +8,6 @@ import { toUsageWindows, type UsageWindow } from "@/lib/codex/rate-limits";
 
 export type AccountUsage = {
   id: string;
-  label: string;
   email: string | null;
   planType: string | null;
   status: "ready" | "signed-out" | "unavailable";
@@ -38,7 +37,6 @@ export async function loadAccountUsage(
     if (!auth.account || auth.account.type !== "chatgpt") {
       return {
         id: account.id,
-        label: account.label,
         email: null,
         planType: null,
         status: "signed-out",
@@ -50,7 +48,6 @@ export async function loadAccountUsage(
     const snapshot = response.rateLimitsByLimitId?.codex ?? response.rateLimits;
     return {
       id: account.id,
-      label: account.label,
       email: auth.account.email,
       planType: auth.account.planType,
       status: "ready",
@@ -59,7 +56,6 @@ export async function loadAccountUsage(
   } catch {
     return {
       id: account.id,
-      label: account.label,
       email: null,
       planType: null,
       status: "unavailable",

@@ -6,7 +6,6 @@ import type { StoredAccount } from "@/lib/accounts/account-store";
 
 const account: StoredAccount = {
   id: "account-1",
-  label: "個人 Plus",
   codexHome: "/profiles/account-1",
   createdAt: "2026-09-23T00:00:00.000Z",
 };

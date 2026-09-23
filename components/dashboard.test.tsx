@@ -6,7 +6,6 @@ import { Dashboard } from "@/components/dashboard";
 const accounts = [
   {
     id: "account-1",
-    label: "個人 Plus",
     email: "me@example.com",
     planType: "plus",
     status: "ready" as const,
@@ -26,10 +25,8 @@ describe("Dashboard", () => {
   it("shows all registered accounts and account controls", () => {
     render(<Dashboard initialAccounts={accounts} />);
 
-    expect(screen.getByRole("heading", { name: "残高" })).toBeInTheDocument();
-    expect(screen.getByText("Codex と Work は同じ利用上限を共有しています。")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "アカウントを追加" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "更新" })).toBeInTheDocument();
-    expect(screen.getByText("個人 Plus")).toBeInTheDocument();
+    expect(screen.getByText("me@example.com")).toBeInTheDocument();
   });
 });

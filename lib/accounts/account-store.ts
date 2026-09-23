@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 
 export type StoredAccount = {
   id: string;
-  label: string;
   codexHome: string;
   createdAt: string;
 };
@@ -28,15 +27,11 @@ export class AccountStore {
     }
   }
 
-  async create(label: string): Promise<StoredAccount> {
-    const normalizedLabel = label.trim();
-    if (!normalizedLabel) throw new Error("アカウント名を入力してください");
-
+  async create(): Promise<StoredAccount> {
     const id = randomUUID();
     const codexHome = path.join(this.profilesRoot, id);
     const account: StoredAccount = {
       id,
-      label: normalizedLabel,
       codexHome,
       createdAt: new Date().toISOString(),
     };
