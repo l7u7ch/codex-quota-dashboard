@@ -5,7 +5,7 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   test: {
-    exclude: [...configDefaults.exclude, ".codex-profiles/**"],
+    exclude: [...configDefaults.exclude, ".codex-profiles/**", "data/**"],
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
   },

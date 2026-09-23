@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { getAccountStore } from "@/lib/accounts/account-store";
 import { loginManager } from "@/lib/accounts/login-manager";
+import { getAuthStore } from "@/lib/auth/auth-store";
 import { isValidSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -13,7 +14,7 @@ export async function GET(
   context: { params: Promise<{ id: string; loginId: string }> },
 ) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!isValidSession(sessionToken)) {
+  if (!isValidSession(sessionToken, await getAuthStore().read())) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
@@ -37,7 +38,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string; loginId: string }> },
 ) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!isValidSession(sessionToken)) {
+  if (!isValidSession(sessionToken, await getAuthStore().read())) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 

@@ -3,9 +3,10 @@
 .env*
 *.log
 *.tsbuildinfo
-/.codex-profiles/
 /.next/
 /.vercel/
 /coverage/
+/data/
+/.codex-profiles/
 /node_modules/
 /out/

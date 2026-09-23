@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { LoaderCircle, Plus, RefreshCw } from "lucide-react";
+import { LoaderCircle, LogOut, Plus, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { AccountCard } from "@/components/account-card";
@@ -27,10 +28,12 @@ export function Dashboard({
 }: {
   initialAccounts: AccountUsage[];
 }) {
+  const router = useRouter();
   const [accounts, setAccounts] = useState(initialAccounts);
   const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [login, setLogin] = useState<LoginPrompt | null>(null);
 
   const refresh = useCallback(async (quiet = false) => {
@@ -122,6 +125,18 @@ export function Dashboard({
     }
   }
 
+  async function logout() {
+    setLoggingOut(true);
+    try {
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (!response.ok) throw new Error("request failed");
+      router.replace("/login");
+    } catch {
+      toast.error("ログアウトできませんでした");
+      setLoggingOut(false);
+    }
+  }
+
   return (
     <>
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -132,6 +147,10 @@ export function Dashboard({
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void logout()} disabled={loggingOut}>
+              {loggingOut ? <LoaderCircle className="animate-spin" /> : <LogOut />}
+              ログアウト
+            </Button>
             <Button
               variant="outline"
               onClick={() => void refresh()}

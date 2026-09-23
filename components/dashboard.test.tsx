@@ -9,6 +9,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Dashboard } from "@/components/dashboard";
 
+const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: replaceMock }),
+}));
+
 const accounts = [
   {
     id: "account-1",
@@ -32,6 +38,7 @@ describe("Dashboard", () => {
     cleanup();
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    replaceMock.mockReset();
   });
 
   it("shows all registered accounts and account controls without a summary footer", () => {
@@ -46,6 +53,19 @@ describe("Dashboard", () => {
     expect(screen.getByRole("table").parentElement?.parentElement).toHaveClass("rounded-md");
     expect(screen.queryByText(/accounts$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/low capacity/i)).not.toBeInTheDocument();
+  });
+
+  it("logs out from the header and returns to the login page", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    fireEvent.click(screen.getByRole("button", { name: "ログアウト" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/logout", { method: "POST" });
+      expect(replaceMock).toHaveBeenCalledWith("/login");
+    });
   });
 
   it("starts login directly when adding an account", async () => {

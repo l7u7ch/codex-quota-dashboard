@@ -7,6 +7,7 @@ export default defineConfig([
   ...nextTs,
   globalIgnores([
     ".codex-profiles/**",
+    "data/**",
     ".next/**",
     "out/**",
     "build/**",

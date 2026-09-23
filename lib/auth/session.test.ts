@@ -1,41 +1,48 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { hashPassword } from "@/lib/auth/auth-store";
 import {
   createSession,
   isValidCredential,
   isValidSession,
 } from "@/lib/auth/session";
 
+const auth = {
+  loginId: "owner",
+  passwordHash: hashPassword("correct-password", "test-salt"),
+  sessionSigningSecret: "test-session-signing-secret",
+};
+
 describe("session authentication", () => {
-  it("accepts only the configured initial administrator credentials", () => {
-    expect(isValidCredential("admin", "admin")).toBe(true);
-    expect(isValidCredential("admin", "wrong-password")).toBe(false);
-    expect(isValidCredential("other-user", "admin")).toBe(false);
+  it("accepts only credentials from the persistent auth configuration", () => {
+    expect(isValidCredential("owner", "correct-password", auth)).toBe(true);
+    expect(isValidCredential("admin", "admin", auth)).toBe(false);
   });
 
   it("creates a session that can be validated", () => {
-    const token = createSession();
+    const token = createSession(auth);
 
-    expect(isValidSession(token)).toBe(true);
-    expect(isValidSession(`${token}tampered`)).toBe(false);
+    expect(isValidSession(token, auth)).toBe(true);
+    expect(isValidSession(`${token}tampered`, auth)).toBe(false);
   });
 
   it("validates a session in a fresh server module context", async () => {
     const { createSession: createSessionInLoginRoute } = await import("@/lib/auth/session");
-    const token = createSessionInLoginRoute();
+    const token = createSessionInLoginRoute(auth);
 
     vi.resetModules();
     const { isValidSession: validateSessionInPageRoute } = await import("@/lib/auth/session");
 
-    expect(validateSessionInPageRoute(token)).toBe(true);
+    expect(validateSessionInPageRoute(token, auth)).toBe(true);
+    expect(validateSessionInPageRoute(token, { ...auth, sessionSigningSecret: "other-secret" })).toBe(false);
   });
 
   it("expires sessions after the configured lifetime", () => {
     vi.useFakeTimers();
-    const token = createSession();
+    const token = createSession(auth);
 
     vi.advanceTimersByTime(8 * 60 * 60 * 1_000 + 1);
-    expect(isValidSession(token)).toBe(false);
+    expect(isValidSession(token, auth)).toBe(false);
 
     vi.useRealTimers();
   });

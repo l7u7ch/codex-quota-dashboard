@@ -76,6 +76,5 @@ export class AccountStore {
 }
 
 export function getAccountStore() {
-  const root = process.env.CODEX_USAGE_DATA_DIR ?? path.join(process.cwd(), ".codex-profiles");
-  return new AccountStore(root);
+  return new AccountStore(path.join(process.cwd(), "data"));
 }

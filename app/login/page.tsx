@@ -1,4 +1,5 @@
 import { LoginForm } from "@/components/login-form";
+import { getAuthStore } from "@/lib/auth/auth-store";
 import { isValidSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -9,7 +10,7 @@ export const metadata = {
 
 export default async function LoginPage() {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (isValidSession(sessionToken)) redirect("/");
+  if (isValidSession(sessionToken, await getAuthStore().read())) redirect("/");
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
