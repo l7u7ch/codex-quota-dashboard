@@ -43,6 +43,7 @@ describe("Dashboard", () => {
     expect(screen.getByRole("columnheader", { name: "5時間枠" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "週間枠" })).toBeInTheDocument();
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
+    expect(screen.getByRole("table").parentElement?.parentElement).toHaveClass("rounded-md");
     expect(screen.queryByText(/accounts$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/low capacity/i)).not.toBeInTheDocument();
   });

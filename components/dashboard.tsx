@@ -197,7 +197,7 @@ export function Dashboard({
 
       <main className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-[1500px] px-6 py-8 lg:px-10">
         {accounts.length ? (
-          <div className="overflow-hidden border border-border/80 bg-card/30">
+          <div className="overflow-hidden rounded-md border border-border/80 bg-card/30">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>

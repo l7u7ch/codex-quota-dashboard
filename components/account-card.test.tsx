@@ -36,6 +36,7 @@ describe("AccountCard", () => {
     renderAccount();
 
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
+    expect(screen.getByText("plus")).toHaveClass("rounded-sm");
     expect(screen.getByRole("progressbar", { name: "5時間の使用制限 72% 残り" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "週間利用上限 41% 残り" })).toBeInTheDocument();
     expect(screen.getByText("72")).toBeInTheDocument();
