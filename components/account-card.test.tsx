@@ -38,6 +38,37 @@ describe("AccountCard", () => {
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
   });
 
+  it("uses a blue progress indicator when 80% or more quota remains", () => {
+    const { container } = render(
+      <AccountCard
+        account={{
+          ...account,
+          windows: [{ ...account.windows[0], remainingPercent: 80 }],
+        }}
+      />,
+    );
+
+    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass("bg-blue-500");
+  });
+
+  it.each([
+    [60, "bg-green-500"],
+    [40, "bg-yellow-500"],
+    [20, "bg-orange-500"],
+    [19, "bg-red-500"],
+  ])("uses the expected indicator color at %i%% remaining", (remainingPercent, colorClass) => {
+    const { container } = render(
+      <AccountCard
+        account={{
+          ...account,
+          windows: [{ ...account.windows[0], remainingPercent }],
+        }}
+      />,
+    );
+
+    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass(colorClass);
+  });
+
   it("prompts for login when the account is signed out", () => {
     render(
       <AccountCard
