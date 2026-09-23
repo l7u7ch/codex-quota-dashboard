@@ -72,8 +72,8 @@ export function AccountCard({ account }: { account: AccountUsage }) {
             <td key={window?.id ?? index} className="min-w-64 px-5 py-6 align-middle">
               {window ? (
                 <div className="space-y-3">
-                  <div className="flex items-baseline gap-4">
-                    <p className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">
+                  <div className="flex items-baseline justify-end">
+                    <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
                       {window.remainingPercent}<span className="ml-0.5 text-sm font-medium text-muted-foreground">%</span>
                     </p>
                   </div>
@@ -83,12 +83,17 @@ export function AccountCard({ account }: { account: AccountUsage }) {
                     indicatorClassName="bg-foreground/75"
                     aria-label={`${window.label} ${window.remainingPercent}% 残り`}
                   />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {formatTimeUntilReset(window.resetsAt, now)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    リセット {formatReset(window.resetsAt, window.windowDurationMins)}
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      リセット{" "}
+                      <span className="font-medium text-primary/90">
+                        {formatReset(window.resetsAt, window.windowDurationMins)}
+                      </span>
+                    </p>
+                    <p className="shrink-0 text-sm font-medium text-foreground/90">
+                      {formatTimeUntilReset(window.resetsAt, now)}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <span className="text-sm text-muted-foreground">—</span>

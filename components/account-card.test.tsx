@@ -50,21 +50,25 @@ describe("AccountCard", () => {
     });
 
     expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass("bg-foreground/75");
-    expect(container.querySelector("p.text-2xl")).toHaveClass("text-foreground");
-    expect(container.querySelector("p.text-2xl")).not.toHaveClass("text-red-400", "text-amber-300");
+    expect(container.querySelector("p.text-3xl")).toHaveClass("text-foreground");
+    expect(container.querySelector("p.text-3xl")).not.toHaveClass("text-red-400", "text-amber-300");
   });
 
-  it("places the time remaining below the quota progress bar", () => {
+  it("right-aligns the percentage and time remaining", () => {
     const { container } = renderAccount();
     const quota = container.querySelector('[aria-label="5時間の使用制限 72% 残り"]');
     const timeRemaining = Array.from(container.querySelectorAll("p")).find((element) =>
       element.textContent?.startsWith("あと"),
     );
+    const percentage = Array.from(container.querySelectorAll("p")).find((element) =>
+      element.textContent === "72%",
+    );
 
     expect(quota).not.toBeNull();
     expect(timeRemaining).not.toBeUndefined();
     expect(quota!.compareDocumentPosition(timeRemaining!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(container.querySelector("div.flex.items-baseline p.text-sm")).toBeNull();
+    expect(percentage?.parentElement).toHaveClass("justify-end");
+    expect(timeRemaining?.parentElement).toHaveClass("justify-between");
   });
 
   it("prompts for login when the account is signed out", () => {
