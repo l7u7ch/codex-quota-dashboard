@@ -43,15 +43,19 @@ describe("AccountCard", () => {
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
   });
 
-  it.each([80, 39, 19])("uses neutral quota colors at %i%% remaining", (remainingPercent) => {
+  it.each([
+    [80, "bg-blue-500"],
+    [60, "bg-green-500"],
+    [40, "bg-yellow-500"],
+    [20, "bg-orange-500"],
+    [19, "bg-red-500"],
+  ])("uses the expected indicator color at %i%% remaining", (remainingPercent, colorClass) => {
     const { container } = renderAccount({
       ...account,
       windows: [{ ...account.windows[0], remainingPercent }],
     });
 
-    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass("bg-foreground/75");
-    expect(container.querySelector("p.text-3xl")).toHaveClass("text-foreground");
-    expect(container.querySelector("p.text-3xl")).not.toHaveClass("text-red-400", "text-amber-300");
+    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass(colorClass);
   });
 
   it("right-aligns the percentage and time remaining", () => {

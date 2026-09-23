@@ -38,6 +38,14 @@ export function formatTimeUntilReset(resetsAt: number, now: number) {
   return `あと${parts.join("")}`;
 }
 
+function remainingProgressColor(remainingPercent: number) {
+  if (remainingPercent >= 80) return "bg-blue-500";
+  if (remainingPercent >= 60) return "bg-green-500";
+  if (remainingPercent >= 40) return "bg-yellow-500";
+  if (remainingPercent >= 20) return "bg-orange-500";
+  return "bg-red-500";
+}
+
 export function AccountCard({ account }: { account: AccountUsage }) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -80,7 +88,7 @@ export function AccountCard({ account }: { account: AccountUsage }) {
                   <Progress
                     value={window.remainingPercent}
                     className="h-1.5 rounded-none bg-muted"
-                    indicatorClassName="bg-foreground/75"
+                    indicatorClassName={remainingProgressColor(window.remainingPercent)}
                     aria-label={`${window.label} ${window.remainingPercent}% 残り`}
                   />
                   <div className="flex items-center justify-between gap-3">
