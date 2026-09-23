@@ -21,6 +21,7 @@ type LoginState = {
 };
 
 type LoginSession = {
+  account: StoredAccount;
   state: LoginState;
   close(): void;
   timeout: ReturnType<typeof setTimeout>;
@@ -46,6 +47,7 @@ export class LoginManager {
       }, 10 * 60 * 1000);
       timeout.unref();
       this.logins.set(key, {
+        account,
         state: { loginId: login.loginId, status: "pending" },
         close: client.close,
         timeout,
@@ -74,6 +76,10 @@ export class LoginManager {
     const { state } = session;
     const { status, error } = state;
     return error ? { status, error } : { status };
+  }
+
+  getAccount(accountId: string, loginId: string) {
+    return this.logins.get(this.key(accountId, loginId))?.account ?? null;
   }
 
   discard(accountId: string, loginId: string) {

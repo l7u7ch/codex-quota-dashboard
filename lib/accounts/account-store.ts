@@ -27,7 +27,7 @@ export class AccountStore {
     }
   }
 
-  async create(): Promise<StoredAccount> {
+  async createPending(): Promise<StoredAccount> {
     const id = randomUUID();
     const codexHome = path.join(this.profilesRoot, id);
     const account: StoredAccount = {
@@ -37,9 +37,13 @@ export class AccountStore {
     };
 
     await mkdir(codexHome, { recursive: true, mode: 0o700 });
-    const accounts = [...(await this.list()), account];
-    await this.writeAccounts(accounts);
     return account;
+  }
+
+  async persist(account: StoredAccount): Promise<void> {
+    const accounts = await this.list();
+    if (accounts.some((candidate) => candidate.id === account.id)) return;
+    await this.writeAccounts([...accounts, account]);
   }
 
   async get(id: string): Promise<StoredAccount | null> {
@@ -54,6 +58,10 @@ export class AccountStore {
     await rm(account.codexHome, { recursive: true, force: true });
     await this.writeAccounts(accounts.filter((candidate) => candidate.id !== id));
     return true;
+  }
+
+  async discardPending(account: StoredAccount): Promise<void> {
+    await rm(account.codexHome, { recursive: true, force: true });
   }
 
   private async writeAccounts(accounts: StoredAccount[]) {

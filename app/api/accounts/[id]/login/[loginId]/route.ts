@@ -11,14 +11,16 @@ export async function GET(
   context: { params: Promise<{ id: string; loginId: string }> },
 ) {
   const { id, loginId } = await context.params;
-  const account = await getAccountStore().get(id);
-  if (!account) {
-    return NextResponse.json({ error: "アカウントが見つかりません" }, { status: 404 });
-  }
-
   const state = loginManager.status(id, loginId);
   if (!state) {
     return NextResponse.json({ error: "ログイン処理が見つかりません" }, { status: 404 });
+  }
+  if (state.status === "complete") {
+    const account = loginManager.getAccount(id, loginId);
+    if (!account) {
+      return NextResponse.json({ error: "アカウントが見つかりません" }, { status: 404 });
+    }
+    await getAccountStore().persist(account);
   }
   return NextResponse.json(state);
 }
@@ -29,10 +31,7 @@ export async function DELETE(
 ) {
   const { id, loginId } = await context.params;
   const store = getAccountStore();
-  const account = await store.get(id);
-  if (!account) {
-    return NextResponse.json({ error: "アカウントが見つかりません" }, { status: 404 });
-  }
+  const account = loginManager.getAccount(id, loginId);
 
   const result = loginManager.discard(id, loginId);
   if (result === "complete") {
@@ -42,6 +41,9 @@ export async function DELETE(
     return NextResponse.json({ error: "ログイン処理が見つかりません" }, { status: 404 });
   }
 
-  await store.remove(id);
+  if (!account) {
+    return NextResponse.json({ error: "ログイン処理が見つかりません" }, { status: 404 });
+  }
+  await store.discardPending(account);
   return new NextResponse(null, { status: 204 });
 }
