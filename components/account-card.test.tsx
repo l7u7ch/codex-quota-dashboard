@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { AccountCard } from "@/components/account-card";
+import { AccountCard, formatTimeUntilReset } from "@/components/account-card";
 
 const account = {
   id: "account-1",
@@ -46,5 +46,9 @@ describe("AccountCard", () => {
     );
 
     expect(screen.getByText("ログインが必要です")).toBeInTheDocument();
+  });
+
+  it("shows the time remaining until a usage window resets", () => {
+    expect(formatTimeUntilReset(1_800_000_000, 1_799_999_700_000)).toBe("あと5分");
   });
 });

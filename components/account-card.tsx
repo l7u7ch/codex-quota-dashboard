@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { AlertCircle, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +27,26 @@ function formatReset(resetsAt: number, durationMins: number) {
   }).format(date);
 }
 
+export function formatTimeUntilReset(resetsAt: number, now: number) {
+  const remainingMins = Math.ceil((resetsAt * 1000 - now) / 60_000);
+  if (remainingMins <= 0) return "リセット済み";
+
+  const days = Math.floor(remainingMins / (24 * 60));
+  const hours = Math.floor((remainingMins % (24 * 60)) / 60);
+  const minutes = remainingMins % 60;
+  const parts = [days ? `${days}日` : "", hours ? `${hours}時間` : "", minutes ? `${minutes}分` : ""].filter(Boolean);
+
+  return `あと${parts.join("")}`;
+}
+
 export function AccountCard({ account }: { account: AccountUsage }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <section className="space-y-4" aria-labelledby={`account-${account.id}`}>
       <div className="flex flex-wrap items-center gap-3">
@@ -60,7 +82,7 @@ export function AccountCard({ account }: { account: AccountUsage }) {
                 </p>
                 <Progress value={window.remainingPercent} aria-label={`${window.label} ${window.remainingPercent}% 残り`} />
                 <p className="text-sm text-muted-foreground">
-                  リセット: {formatReset(window.resetsAt, window.windowDurationMins)}
+                  リセット: {formatReset(window.resetsAt, window.windowDurationMins)}（{formatTimeUntilReset(window.resetsAt, now)}）
                 </p>
               </CardContent>
             </Card>
