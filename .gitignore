@@ -1,8 +1,11 @@
-node_modules
-.next
-.env*
 !.env.example
-coverage
+.DS_Store
+.env*
 *.log
 *.tsbuildinfo
-.codex-profiles
+/.codex-profiles/
+/.next/
+/.vercel/
+/coverage/
+/node_modules/
+/out/
