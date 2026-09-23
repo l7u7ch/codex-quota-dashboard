@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { LoaderCircle, LogOut, Plus, RefreshCw } from "lucide-react";
+import {
+  Copy,
+  LoaderCircle,
+  LogOut,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -140,6 +146,16 @@ export function Dashboard({
     }
   }
 
+  async function copyLoginCode() {
+    if (!login) return;
+    try {
+      await navigator.clipboard.writeText(login.userCode);
+      toast.success("認証コードをコピーしました");
+    } catch {
+      toast.error("認証コードをコピーできませんでした");
+    }
+  }
+
   return (
     <>
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -196,13 +212,22 @@ export function Dashboard({
                 </DialogHeader>
                 {login ? (
                   <div className="space-y-5">
-                    <div className="rounded-lg border bg-muted/40 p-4">
-                      <p className="mb-2 text-sm text-muted-foreground">
-                        認証コード
-                      </p>
-                      <p className="font-mono text-2xl font-semibold tracking-widest">
-                        {login.userCode}
-                      </p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">認証コード</p>
+                      <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-4">
+                        <p className="min-w-0 flex-1 font-mono text-2xl font-semibold tracking-widest">
+                          {login.userCode}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label="認証コードをコピー"
+                          onClick={() => void copyLoginCode()}
+                        >
+                          <Copy />
+                          コピー
+                        </Button>
+                      </div>
                     </div>
                     <Button asChild className="w-full">
                       <a

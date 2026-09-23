@@ -104,6 +104,32 @@ describe("Dashboard", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("copies the verification code", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText: writeTextMock } });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accountId: "account-2",
+          loginId: "login-2",
+          verificationUrl: "https://auth.openai.com/device",
+          userCode: "ABCD-1234",
+        }),
+      }),
+    );
+
+    render(<Dashboard initialAccounts={accounts} />);
+    fireEvent.click(screen.getByRole("button", { name: "アカウントを追加" }));
+    await screen.findByText("認証コード");
+    fireEvent.click(screen.getByRole("button", { name: "認証コードをコピー" }));
+
+    await waitFor(() => {
+      expect(writeTextMock).toHaveBeenCalledWith("ABCD-1234");
+    });
+  });
+
   it("discards the pending account when the login dialog is closed", async () => {
     const fetchMock = vi
       .fn()
