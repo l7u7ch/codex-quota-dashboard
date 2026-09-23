@@ -44,7 +44,7 @@ describe("AccountCard", () => {
   });
 
   it.each([
-    [80, "bg-blue-500"],
+    [80, "bg-green-500"],
     [60, "bg-green-500"],
     [40, "bg-yellow-500"],
     [20, "bg-orange-500"],
