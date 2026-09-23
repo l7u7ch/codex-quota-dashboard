@@ -1,5 +1,11 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Dashboard } from "@/components/dashboard";
 
@@ -22,6 +28,11 @@ const accounts = [
 ];
 
 describe("Dashboard", () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
   it("shows all registered accounts and account controls without a summary footer", () => {
     render(<Dashboard initialAccounts={accounts} />);
 
@@ -33,5 +44,35 @@ describe("Dashboard", () => {
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
     expect(screen.queryByText(/accounts$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/low capacity/i)).not.toBeInTheDocument();
+  });
+
+  it("starts login directly when adding an account", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        accountId: "account-2",
+        loginId: "login-2",
+        verificationUrl: "https://auth.openai.com/device",
+        userCode: "ABCD-1234",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    fireEvent.click(screen.getByRole("button", { name: "アカウントを追加" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/accounts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    });
+
+    expect(await screen.findByText("認証コード")).toBeInTheDocument();
+    expect(screen.getByText("ABCD-1234")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "ログインを開始" }),
+    ).not.toBeInTheDocument();
   });
 });

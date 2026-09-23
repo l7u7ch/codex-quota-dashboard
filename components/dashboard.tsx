@@ -10,10 +10,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import type { AccountUsage } from "@/lib/accounts/account-usage";
 
@@ -81,6 +79,7 @@ export function Dashboard({
   }, [login, refresh]);
 
   async function addAccount() {
+    setLogin(null);
     setSubmitting(true);
     try {
       const response = await fetch("/api/accounts", {
@@ -93,6 +92,7 @@ export function Dashboard({
       };
       if (!response.ok) throw new Error(result.error);
       setLogin(result);
+      setDialogOpen(true);
     } catch (error) {
       toast.error(
         error instanceof Error && error.message
@@ -122,13 +122,20 @@ export function Dashboard({
               <RefreshCw className={refreshing ? "animate-spin" : ""} />
               更新
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus />
-                  アカウントを追加
-                </Button>
-              </DialogTrigger>
+            <Button
+              onClick={() => void addAccount()}
+              disabled={submitting}
+            >
+              {submitting ? <LoaderCircle className="animate-spin" /> : <Plus />}
+              アカウントを追加
+            </Button>
+            <Dialog
+              open={dialogOpen}
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) setLogin(null);
+              }}
+            >
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>ChatGPTアカウントを追加</DialogTitle>
@@ -160,20 +167,7 @@ export function Dashboard({
                       ログイン完了を待っています
                     </p>
                   </div>
-                ) : (
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      onClick={() => void addAccount()}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <LoaderCircle className="animate-spin" />
-                      ) : null}
-                      ログインを開始
-                    </Button>
-                  </DialogFooter>
-                )}
+                ) : null}
               </DialogContent>
             </Dialog>
           </div>
