@@ -34,11 +34,6 @@ export function Dashboard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [login, setLogin] = useState<LoginPrompt | null>(null);
-  const lowCapacityCount = accounts.filter(
-    (account) =>
-      account.status === "ready" &&
-      account.windows.some((window) => window.remainingPercent < 20),
-  ).length;
 
   const refresh = useCallback(async (quiet = false) => {
     if (!quiet) setRefreshing(true);
@@ -218,12 +213,6 @@ export function Dashboard({
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div className="flex items-center gap-5 border-t border-border/80 px-5 py-3 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">
-              <span>{accounts.length} accounts</span>
-              <span className={lowCapacityCount ? "text-red-400" : undefined}>
-                {lowCapacityCount} low capacity
-              </span>
             </div>
           </div>
         ) : (

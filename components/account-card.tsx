@@ -38,18 +38,6 @@ export function formatTimeUntilReset(resetsAt: number, now: number) {
   return `あと${parts.join("")}`;
 }
 
-function remainingProgressColor(remainingPercent: number) {
-  if (remainingPercent < 20) return "bg-red-500";
-  if (remainingPercent < 40) return "bg-amber-400";
-  return "bg-foreground/75";
-}
-
-function remainingTextColor(remainingPercent: number) {
-  if (remainingPercent < 20) return "text-red-400";
-  if (remainingPercent < 40) return "text-amber-300";
-  return "text-foreground";
-}
-
 export function AccountCard({ account }: { account: AccountUsage }) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -84,20 +72,20 @@ export function AccountCard({ account }: { account: AccountUsage }) {
             <td key={window?.id ?? index} className="min-w-64 px-5 py-6 align-middle">
               {window ? (
                 <div className="space-y-3">
-                  <div className="flex items-baseline justify-between gap-4">
-                    <p className={`text-2xl font-semibold tabular-nums tracking-tight ${remainingTextColor(window.remainingPercent)}`}>
+                  <div className="flex items-baseline gap-4">
+                    <p className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">
                       {window.remainingPercent}<span className="ml-0.5 text-sm font-medium text-muted-foreground">%</span>
-                    </p>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {formatTimeUntilReset(window.resetsAt, now)}
                     </p>
                   </div>
                   <Progress
                     value={window.remainingPercent}
                     className="h-1.5 rounded-none bg-muted"
-                    indicatorClassName={remainingProgressColor(window.remainingPercent)}
+                    indicatorClassName="bg-foreground/75"
                     aria-label={`${window.label} ${window.remainingPercent}% 残り`}
                   />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {formatTimeUntilReset(window.resetsAt, now)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     リセット {formatReset(window.resetsAt, window.windowDurationMins)}
                   </p>

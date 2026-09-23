@@ -22,7 +22,7 @@ const accounts = [
 ];
 
 describe("Dashboard", () => {
-  it("shows all registered accounts and account controls", () => {
+  it("shows all registered accounts and account controls without a summary footer", () => {
     render(<Dashboard initialAccounts={accounts} />);
 
     expect(screen.getByRole("button", { name: "アカウントを追加" })).toBeInTheDocument();
@@ -31,6 +31,7 @@ describe("Dashboard", () => {
     expect(screen.getByRole("columnheader", { name: "5時間枠" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "週間枠" })).toBeInTheDocument();
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
-    expect(screen.getByText("1 accounts")).toBeInTheDocument();
+    expect(screen.queryByText(/accounts$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/low capacity/i)).not.toBeInTheDocument();
   });
 });

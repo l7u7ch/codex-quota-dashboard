@@ -43,27 +43,28 @@ describe("AccountCard", () => {
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
   });
 
-  it("uses a neutral progress indicator for healthy quota", () => {
-    const { container } = renderAccount({
-      ...account,
-      windows: [{ ...account.windows[0], remainingPercent: 80 }],
-    });
-
-    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass("bg-foreground/75");
-  });
-
-  it.each([
-    [40, "bg-foreground/75"],
-    [39, "bg-amber-400"],
-    [20, "bg-amber-400"],
-    [19, "bg-red-500"],
-  ])("uses the expected indicator color at %i%% remaining", (remainingPercent, colorClass) => {
+  it.each([80, 39, 19])("uses neutral quota colors at %i%% remaining", (remainingPercent) => {
     const { container } = renderAccount({
       ...account,
       windows: [{ ...account.windows[0], remainingPercent }],
     });
 
-    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass(colorClass);
+    expect(container.querySelector('[data-slot="progress-indicator"]')).toHaveClass("bg-foreground/75");
+    expect(container.querySelector("p.text-2xl")).toHaveClass("text-foreground");
+    expect(container.querySelector("p.text-2xl")).not.toHaveClass("text-red-400", "text-amber-300");
+  });
+
+  it("places the time remaining below the quota progress bar", () => {
+    const { container } = renderAccount();
+    const quota = container.querySelector('[aria-label="5時間の使用制限 72% 残り"]');
+    const timeRemaining = Array.from(container.querySelectorAll("p")).find((element) =>
+      element.textContent?.startsWith("あと"),
+    );
+
+    expect(quota).not.toBeNull();
+    expect(timeRemaining).not.toBeUndefined();
+    expect(quota!.compareDocumentPosition(timeRemaining!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector("div.flex.items-baseline p.text-sm")).toBeNull();
   });
 
   it("prompts for login when the account is signed out", () => {
