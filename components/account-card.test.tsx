@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { AccountCard, formatTimeUntilReset } from "@/components/account-card";
@@ -101,5 +101,17 @@ describe("AccountCard", () => {
 
   it("shows the time remaining until a usage window resets", () => {
     expect(formatTimeUntilReset(1_800_000_000, 1_799_999_700_000)).toBe("あと5分");
+  });
+
+  it("shows unused instead of reset details for fully available windows", () => {
+    const { container } = renderAccount({
+      ...account,
+      windows: account.windows.map((window) => ({ ...window, remainingPercent: 100 })),
+    });
+    const card = within(container);
+
+    expect(card.getAllByText("未使用")).toHaveLength(2);
+    expect(card.queryByText(/^リセット/)).not.toBeInTheDocument();
+    expect(card.queryByText(/^あと/)).not.toBeInTheDocument();
   });
 });

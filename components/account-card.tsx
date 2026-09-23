@@ -90,17 +90,21 @@ export function AccountCard({ account }: { account: AccountUsage }) {
                     indicatorClassName={remainingProgressColor(window.remainingPercent)}
                     aria-label={`${window.label} ${window.remainingPercent}% 残り`}
                   />
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] text-muted-foreground">
-                      リセット{" "}
-                      <span className="font-medium text-foreground/80">
-                        {formatReset(window.resetsAt, window.windowDurationMins)}
-                      </span>
-                    </p>
-                    <p className="shrink-0 text-[13px] font-medium text-foreground/80">
-                      {formatTimeUntilReset(window.resetsAt, now)}
-                    </p>
-                  </div>
+                  {window.remainingPercent === 100 ? (
+                    <p className="text-[13px] text-muted-foreground">未使用</p>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[13px] text-muted-foreground">
+                        リセット{" "}
+                        <span className="font-medium text-foreground/80">
+                          {formatReset(window.resetsAt, window.windowDurationMins)}
+                        </span>
+                      </p>
+                      <p className="shrink-0 text-[13px] font-medium text-foreground/80">
+                        {formatTimeUntilReset(window.resetsAt, now)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <span className="text-sm text-muted-foreground">—</span>
