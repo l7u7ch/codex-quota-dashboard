@@ -9,8 +9,10 @@ import { AccountCard } from "@/components/account-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -34,6 +36,7 @@ export function Dashboard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [login, setLogin] = useState<LoginPrompt | null>(null);
 
   const refresh = useCallback(async (quiet = false) => {
@@ -146,11 +149,8 @@ export function Dashboard({
               Codex Quota Dashboard
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void logout()} disabled={loggingOut}>
-              {loggingOut ? <LoaderCircle className="animate-spin" /> : <LogOut />}
-              ログアウト
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => void refresh()}
@@ -166,6 +166,17 @@ export function Dashboard({
               {submitting ? <LoaderCircle className="animate-spin" /> : <Plus />}
               アカウントを追加
             </Button>
+            </div>
+            <div className="border-l pl-4">
+              <Button
+                variant="outline"
+                onClick={() => setLogoutDialogOpen(true)}
+                disabled={loggingOut}
+              >
+                {loggingOut ? <LoaderCircle className="animate-spin" /> : <LogOut />}
+                ログアウト
+              </Button>
+            </div>
             <Dialog
               open={dialogOpen}
               onOpenChange={(open) => {
@@ -213,6 +224,28 @@ export function Dashboard({
           </div>
         </div>
       </header>
+
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>ログアウトしますか？</DialogTitle>
+            <DialogDescription>
+              このブラウザで保存されているログイン状態を終了します。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={loggingOut}>
+                キャンセル
+              </Button>
+            </DialogClose>
+            <Button onClick={() => void logout()} disabled={loggingOut}>
+              {loggingOut ? <LoaderCircle className="animate-spin" /> : null}
+              ログアウトする
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-[1500px] px-6 py-8 lg:px-10">
         {accounts.length ? (

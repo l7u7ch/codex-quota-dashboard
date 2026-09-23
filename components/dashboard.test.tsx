@@ -55,12 +55,18 @@ describe("Dashboard", () => {
     expect(screen.queryByText(/low capacity/i)).not.toBeInTheDocument();
   });
 
-  it("logs out from the header and returns to the login page", async () => {
+  it("asks for confirmation before logging out", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
     render(<Dashboard initialAccounts={accounts} />);
     fireEvent.click(screen.getByRole("button", { name: "ログアウト" }));
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "ログアウトしますか？" })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "ログアウトする" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/logout", { method: "POST" });
