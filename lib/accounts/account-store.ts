@@ -1,0 +1,68 @@
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+
+export type StoredAccount = {
+  id: string;
+  label: string;
+  codexHome: string;
+  createdAt: string;
+};
+
+export class AccountStore {
+  private readonly accountsFile: string;
+  private readonly profilesRoot: string;
+
+  constructor(private readonly root: string) {
+    this.accountsFile = path.join(root, "accounts.json");
+    this.profilesRoot = path.join(root, "profiles");
+  }
+
+  async list(): Promise<StoredAccount[]> {
+    try {
+      const contents = await readFile(this.accountsFile, "utf8");
+      return JSON.parse(contents) as StoredAccount[];
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    }
+  }
+
+  async create(label: string): Promise<StoredAccount> {
+    const normalizedLabel = label.trim();
+    if (!normalizedLabel) throw new Error("アカウント名を入力してください");
+
+    const id = randomUUID();
+    const codexHome = path.join(this.profilesRoot, id);
+    const account: StoredAccount = {
+      id,
+      label: normalizedLabel,
+      codexHome,
+      createdAt: new Date().toISOString(),
+    };
+
+    await mkdir(codexHome, { recursive: true, mode: 0o700 });
+    const accounts = [...(await this.list()), account];
+    await this.writeAccounts(accounts);
+    return account;
+  }
+
+  async get(id: string): Promise<StoredAccount | null> {
+    return (await this.list()).find((account) => account.id === id) ?? null;
+  }
+
+  private async writeAccounts(accounts: StoredAccount[]) {
+    await mkdir(this.root, { recursive: true, mode: 0o700 });
+    const temporaryFile = `${this.accountsFile}.${randomUUID()}.tmp`;
+    await writeFile(temporaryFile, `${JSON.stringify(accounts, null, 2)}\n`, {
+      encoding: "utf8",
+      mode: 0o600,
+    });
+    await rename(temporaryFile, this.accountsFile);
+  }
+}
+
+export function getAccountStore() {
+  const root = process.env.CODEX_USAGE_DATA_DIR ?? path.join(process.cwd(), ".codex-profiles");
+  return new AccountStore(root);
+}

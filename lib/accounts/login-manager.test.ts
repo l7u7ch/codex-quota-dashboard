@@ -1,0 +1,68 @@
+import { EventEmitter } from "node:events";
+import { describe, expect, it, vi } from "vitest";
+
+import { LoginManager } from "@/lib/accounts/login-manager";
+import type { StoredAccount } from "@/lib/accounts/account-store";
+
+const account: StoredAccount = {
+  id: "account-1",
+  label: "個人 Plus",
+  codexHome: "/profiles/account-1",
+  createdAt: "2026-09-23T00:00:00.000Z",
+};
+
+describe("LoginManager", () => {
+  it("starts device-code login and records successful completion", async () => {
+    const connection = new EventEmitter();
+    const close = vi.fn();
+    const manager = new LoginManager(async () => ({
+      connection,
+      startDeviceLogin: async () => ({
+        type: "chatgptDeviceCode" as const,
+        loginId: "login-1",
+        verificationUrl: "https://auth.openai.com/codex/device",
+        userCode: "ABCD-1234",
+      }),
+      close,
+    }));
+
+    const started = await manager.begin(account);
+    expect(started.userCode).toBe("ABCD-1234");
+    expect(manager.status(account.id, "login-1")).toEqual({ status: "pending" });
+
+    connection.emit("account/login/completed", {
+      loginId: "login-1",
+      success: true,
+      error: null,
+    });
+
+    expect(manager.status(account.id, "login-1")).toEqual({ status: "complete" });
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it("does not expose provider login errors", async () => {
+    const connection = new EventEmitter();
+    const manager = new LoginManager(async () => ({
+      connection,
+      startDeviceLogin: async () => ({
+        type: "chatgptDeviceCode" as const,
+        loginId: "login-2",
+        verificationUrl: "https://auth.openai.com/codex/device",
+        userCode: "WXYZ-9876",
+      }),
+      close: vi.fn(),
+    }));
+
+    await manager.begin(account);
+    connection.emit("account/login/completed", {
+      loginId: "login-2",
+      success: false,
+      error: "secret provider detail",
+    });
+
+    expect(manager.status(account.id, "login-2")).toEqual({
+      status: "failed",
+      error: "ChatGPTへのログインに失敗しました",
+    });
+  });
+});

@@ -1,0 +1,188 @@
+"use client";
+
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Info, LoaderCircle, Plus, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+
+import { AccountCard } from "@/components/account-card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import type { AccountUsage } from "@/lib/accounts/account-usage";
+
+type LoginPrompt = {
+  accountId: string;
+  loginId: string;
+  verificationUrl: string;
+  userCode: string;
+};
+
+export function Dashboard({ initialAccounts }: { initialAccounts: AccountUsage[] }) {
+  const [accounts, setAccounts] = useState(initialAccounts);
+  const [refreshing, setRefreshing] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [label, setLabel] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [login, setLogin] = useState<LoginPrompt | null>(null);
+
+  const refresh = useCallback(async (quiet = false) => {
+    if (!quiet) setRefreshing(true);
+    try {
+      const response = await fetch("/api/accounts", { cache: "no-store" });
+      if (!response.ok) throw new Error("request failed");
+      const body = (await response.json()) as { accounts: AccountUsage[] };
+      setAccounts(body.accounts);
+    } catch {
+      if (!quiet) toast.error("利用状況を更新できませんでした");
+    } finally {
+      if (!quiet) setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => void refresh(true), 60_000);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!login) return;
+    const timer = window.setInterval(async () => {
+      const response = await fetch(
+        `/api/accounts/${login.accountId}/login/${login.loginId}`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) return;
+      const result = (await response.json()) as {
+        status: "pending" | "complete" | "failed";
+        error?: string;
+      };
+      if (result.status === "complete") {
+        window.clearInterval(timer);
+        toast.success("ChatGPTアカウントを追加しました");
+        setDialogOpen(false);
+        setLogin(null);
+        setLabel("");
+        await refresh(true);
+      } else if (result.status === "failed") {
+        window.clearInterval(timer);
+        toast.error(result.error ?? "ログインに失敗しました");
+      }
+    }, 1_500);
+    return () => window.clearInterval(timer);
+  }, [login, refresh]);
+
+  async function addAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/accounts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ label }),
+      });
+      const result = (await response.json()) as LoginPrompt & { error?: string };
+      if (!response.ok) throw new Error(result.error);
+      setLogin(result);
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : "アカウントを追加できませんでした");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-10 lg:px-10">
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">残高</h1>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            Codex と Work は同じ利用上限を共有しています。
+            <Info className="size-4" aria-hidden="true" />
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => void refresh()} disabled={refreshing}>
+            <RefreshCw className={refreshing ? "animate-spin" : ""} />
+            更新
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus />
+                アカウントを追加
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>ChatGPTアカウントを追加</DialogTitle>
+                <DialogDescription>
+                  認証情報はこのサーバー上のアカウント別プロファイルに保存されます。
+                </DialogDescription>
+              </DialogHeader>
+              {login ? (
+                <div className="space-y-5">
+                  <div className="rounded-lg border bg-muted/40 p-4">
+                    <p className="mb-2 text-sm text-muted-foreground">認証コード</p>
+                    <p className="font-mono text-2xl font-semibold tracking-widest">{login.userCode}</p>
+                  </div>
+                  <Button asChild className="w-full">
+                    <a href={login.verificationUrl} target="_blank" rel="noreferrer">
+                      OpenAIの認証ページを開く
+                    </a>
+                  </Button>
+                  <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" />
+                    ログイン完了を待っています
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={addAccount} className="space-y-4">
+                  <Input
+                    value={label}
+                    onChange={(event) => setLabel(event.target.value)}
+                    placeholder="例: 個人 Plus"
+                    aria-label="アカウント名"
+                    required
+                  />
+                  <DialogFooter>
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? <LoaderCircle className="animate-spin" /> : null}
+                      ログインを開始
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </header>
+
+      {accounts.length ? (
+        <div className="space-y-8">
+          {accounts.map((account, index) => (
+            <div key={account.id}>
+              {index > 0 ? <Separator className="mb-8" /> : null}
+              <AccountCard account={account} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed px-6 py-16 text-center">
+          <p className="font-medium">アカウントがまだありません</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            アカウントを追加すると、Codexの利用枠がここに表示されます。
+          </p>
+        </div>
+      )}
+    </main>
+  );
+}
