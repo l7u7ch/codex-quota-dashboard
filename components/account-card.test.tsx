@@ -71,6 +71,23 @@ describe("AccountCard", () => {
     expect(timeRemaining?.parentElement).toHaveClass("justify-between");
   });
 
+  it("uses a restrained hierarchy for quota details", () => {
+    const { container } = renderAccount();
+    const percentage = Array.from(container.querySelectorAll("p")).find((element) =>
+      element.textContent === "72%",
+    );
+    const reset = screen.getAllByText(/^リセット/)[0];
+    const resetTime = reset.querySelector("span");
+    const timeRemaining = Array.from(container.querySelectorAll("p")).find((element) =>
+      element.textContent?.startsWith("あと"),
+    );
+
+    expect(percentage?.querySelector("span")).toHaveClass("text-foreground/70");
+    expect(reset).toHaveClass("text-[13px]", "text-muted-foreground");
+    expect(resetTime).toHaveClass("text-foreground/80");
+    expect(timeRemaining).toHaveClass("text-[13px]", "text-foreground/80");
+  });
+
   it("prompts for login when the account is signed out", () => {
     renderAccount({ ...account, status: "signed-out", email: null, planType: null, windows: [] });
 

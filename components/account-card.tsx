@@ -74,7 +74,7 @@ export function AccountCard({ account }: { account: AccountUsage }) {
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-end">
                     <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
-                      {window.remainingPercent}<span className="ml-0.5 text-sm font-medium text-muted-foreground">%</span>
+                      {window.remainingPercent}<span className="ml-0.5 text-sm font-medium text-foreground/70">%</span>
                     </p>
                   </div>
                   <Progress
@@ -84,13 +84,13 @@ export function AccountCard({ account }: { account: AccountUsage }) {
                     aria-label={`${window.label} ${window.remainingPercent}% 残り`}
                   />
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       リセット{" "}
-                      <span className="font-medium text-primary/90">
+                      <span className="font-medium text-foreground/80">
                         {formatReset(window.resetsAt, window.windowDurationMins)}
                       </span>
                     </p>
-                    <p className="shrink-0 text-sm font-medium text-foreground/90">
+                    <p className="shrink-0 text-[13px] font-medium text-foreground/80">
                       {formatTimeUntilReset(window.resetsAt, now)}
                     </p>
                   </div>
