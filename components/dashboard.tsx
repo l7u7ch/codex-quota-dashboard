@@ -128,7 +128,7 @@ export function Dashboard({
         <div className="mx-auto flex h-16 w-full max-w-[1500px] items-center justify-between px-6 lg:px-10">
           <div className="flex items-baseline gap-3">
             <p className="text-sm font-semibold tracking-[0.16em]">
-              CODEX QUOTA DASHBOARD
+              Codex Quota Dashboard
             </p>
           </div>
           <div className="flex gap-2">
