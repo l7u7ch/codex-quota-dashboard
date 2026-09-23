@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, UserRound } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { AccountUsage } from "@/lib/accounts/account-usage";
 
@@ -40,11 +39,15 @@ export function formatTimeUntilReset(resetsAt: number, now: number) {
 }
 
 function remainingProgressColor(remainingPercent: number) {
-  if (remainingPercent >= 80) return "bg-blue-500";
-  if (remainingPercent >= 60) return "bg-green-500";
-  if (remainingPercent >= 40) return "bg-yellow-500";
-  if (remainingPercent >= 20) return "bg-orange-500";
-  return "bg-red-500";
+  if (remainingPercent < 20) return "bg-red-500";
+  if (remainingPercent < 40) return "bg-amber-400";
+  return "bg-foreground/75";
+}
+
+function remainingTextColor(remainingPercent: number) {
+  if (remainingPercent < 20) return "text-red-400";
+  if (remainingPercent < 40) return "text-amber-300";
+  return "text-foreground";
 }
 
 export function AccountCard({ account }: { account: AccountUsage }) {
@@ -55,63 +58,66 @@ export function AccountCard({ account }: { account: AccountUsage }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  const windowsByDuration = [...account.windows].sort(
+    (left, right) => left.windowDurationMins - right.windowDurationMins,
+  );
+
   return (
-    <section className="space-y-4" aria-labelledby={`account-${account.id}`}>
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-full bg-muted">
-          <UserRound className="size-4" aria-hidden="true" />
+    <tr className="border-b border-border/70 last:border-0">
+      <th scope="row" className="w-[28%] min-w-64 px-5 py-6 text-left align-middle font-normal">
+        <div className="flex items-center gap-3">
+          <span id={`account-${account.id}`} className="font-medium text-foreground">
+            {account.email ?? "認証中のアカウント"}
+          </span>
+          {account.planType ? (
+            <Badge variant="secondary" className="h-5 rounded-sm px-1.5 text-[10px] uppercase tracking-wider">
+              {account.planType}
+            </Badge>
+          ) : null}
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 id={`account-${account.id}`} className="font-semibold">
-              {account.email ?? "認証中のアカウント"}
-            </h2>
-            {account.planType ? (
-              <Badge variant="secondary" className="uppercase">
-                {account.planType}
-              </Badge>
-            ) : null}
-          </div>
-        </div>
-      </div>
+      </th>
 
       {account.status === "ready" ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {account.windows.map((window) => (
-            <Card key={window.id} className="border-border/70 bg-card shadow-none">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {window.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <p className="text-2xl font-semibold tracking-tight">
-                  {window.remainingPercent}% 残り
-                </p>
-                <Progress
-                  value={window.remainingPercent}
-                  indicatorClassName={remainingProgressColor(window.remainingPercent)}
-                  aria-label={`${window.label} ${window.remainingPercent}% 残り`}
-                />
-                <p className="text-sm text-muted-foreground">
-                  リセット: {formatReset(window.resetsAt, window.windowDurationMins)}（{formatTimeUntilReset(window.resetsAt, now)}）
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        [0, 1].map((index) => {
+          const window = windowsByDuration[index];
+          return (
+            <td key={window?.id ?? index} className="min-w-64 px-5 py-6 align-middle">
+              {window ? (
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <p className={`text-2xl font-semibold tabular-nums tracking-tight ${remainingTextColor(window.remainingPercent)}`}>
+                      {window.remainingPercent}<span className="ml-0.5 text-sm font-medium text-muted-foreground">%</span>
+                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {formatTimeUntilReset(window.resetsAt, now)}
+                    </p>
+                  </div>
+                  <Progress
+                    value={window.remainingPercent}
+                    className="h-1.5 rounded-none bg-muted"
+                    indicatorClassName={remainingProgressColor(window.remainingPercent)}
+                    aria-label={`${window.label} ${window.remainingPercent}% 残り`}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    リセット {formatReset(window.resetsAt, window.windowDurationMins)}
+                  </p>
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">—</span>
+              )}
+            </td>
+          );
+        })
       ) : (
-        <Card className="border-dashed bg-card/60 shadow-none">
-          <CardContent className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
-            <AlertCircle className="size-5" aria-hidden="true" />
-            <span>
-              {account.status === "signed-out"
-                ? "ログインが必要です"
-                : account.error ?? "利用状況を取得できません"}
-            </span>
-          </CardContent>
-        </Card>
+        <td colSpan={2} className="px-5 py-6 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="size-4" aria-hidden="true" />
+            {account.status === "signed-out"
+              ? "ログインが必要です"
+              : account.error ?? "利用状況を取得できません"}
+          </span>
+        </td>
       )}
-    </section>
+    </tr>
   );
 }
