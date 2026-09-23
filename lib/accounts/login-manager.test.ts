@@ -64,4 +64,25 @@ describe("LoginManager", () => {
       error: "ChatGPTへのログインに失敗しました",
     });
   });
+
+  it("cancels a pending device login and closes its client", async () => {
+    const connection = new EventEmitter();
+    const close = vi.fn();
+    const manager = new LoginManager(async () => ({
+      connection,
+      startDeviceLogin: async () => ({
+        type: "chatgptDeviceCode" as const,
+        loginId: "login-3",
+        verificationUrl: "https://auth.openai.com/codex/device",
+        userCode: "CANCEL-01",
+      }),
+      close,
+    }));
+
+    await manager.begin(account);
+
+    expect(manager.discard(account.id, "login-3")).toBe("discarded");
+    expect(manager.status(account.id, "login-3")).toBeNull();
+    expect(close).toHaveBeenCalledOnce();
+  });
 });

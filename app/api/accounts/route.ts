@@ -16,12 +16,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   await request.json().catch(() => null);
+  const store = getAccountStore();
+  let account: Awaited<ReturnType<typeof store.create>> | null = null;
 
   try {
-    const account = await getAccountStore().create();
+    account = await store.create();
     const login = await loginManager.begin(account);
     return NextResponse.json({ accountId: account.id, ...login }, { status: 201 });
   } catch {
+    if (account) await store.remove(account.id);
     return NextResponse.json(
       { error: "Codexのログインを開始できませんでした" },
       { status: 503 },

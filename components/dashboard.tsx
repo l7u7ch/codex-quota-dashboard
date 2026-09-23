@@ -52,6 +52,21 @@ export function Dashboard({
     return () => window.clearInterval(timer);
   }, [refresh]);
 
+  const discardLogin = useCallback(
+    async (loginToDiscard: LoginPrompt) => {
+      try {
+        const response = await fetch(
+          `/api/accounts/${loginToDiscard.accountId}/login/${loginToDiscard.loginId}`,
+          { method: "DELETE" },
+        );
+        if (response.status === 409) await refresh(true);
+      } catch {
+        toast.error("未完了のアカウントを削除できませんでした");
+      }
+    },
+    [refresh],
+  );
+
   useEffect(() => {
     if (!login) return;
     const timer = window.setInterval(async () => {
@@ -73,10 +88,13 @@ export function Dashboard({
       } else if (result.status === "failed") {
         window.clearInterval(timer);
         toast.error(result.error ?? "ログインに失敗しました");
+        void discardLogin(login);
+        setDialogOpen(false);
+        setLogin(null);
       }
     }, 1_500);
     return () => window.clearInterval(timer);
-  }, [login, refresh]);
+  }, [discardLogin, login, refresh]);
 
   async function addAccount() {
     setLogin(null);
@@ -133,7 +151,10 @@ export function Dashboard({
               open={dialogOpen}
               onOpenChange={(open) => {
                 setDialogOpen(open);
-                if (!open) setLogin(null);
+                if (!open && login) {
+                  void discardLogin(login);
+                  setLogin(null);
+                }
               }}
             >
               <DialogContent>

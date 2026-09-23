@@ -30,6 +30,7 @@ const accounts = [
 describe("Dashboard", () => {
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -74,5 +75,63 @@ describe("Dashboard", () => {
     expect(
       screen.queryByRole("button", { name: "ログインを開始" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("discards the pending account when the login dialog is closed", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          accountId: "account-2",
+          loginId: "login-2",
+          verificationUrl: "https://auth.openai.com/device",
+          userCode: "ABCD-1234",
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    fireEvent.click(screen.getByRole("button", { name: "アカウントを追加" }));
+    await screen.findByText("認証コード");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        "/api/accounts/account-2/login/login-2",
+        { method: "DELETE" },
+      );
+    });
+  });
+
+  it("discards the pending account when login fails", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          accountId: "account-2",
+          loginId: "login-2",
+          verificationUrl: "https://auth.openai.com/device",
+          userCode: "ABCD-1234",
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: "failed", error: "ログインに失敗しました" }),
+      })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    fireEvent.click(screen.getByRole("button", { name: "アカウントを追加" }));
+    await screen.findByText("認証コード");
+    await new Promise((resolve) => window.setTimeout(resolve, 1_600));
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/accounts/account-2/login/login-2",
+      { method: "DELETE" },
+    );
   });
 });

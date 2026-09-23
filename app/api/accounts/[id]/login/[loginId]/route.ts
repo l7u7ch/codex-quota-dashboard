@@ -22,3 +22,26 @@ export async function GET(
   }
   return NextResponse.json(state);
 }
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string; loginId: string }> },
+) {
+  const { id, loginId } = await context.params;
+  const store = getAccountStore();
+  const account = await store.get(id);
+  if (!account) {
+    return NextResponse.json({ error: "アカウントが見つかりません" }, { status: 404 });
+  }
+
+  const result = loginManager.discard(id, loginId);
+  if (result === "complete") {
+    return NextResponse.json({ error: "ログインは完了しています" }, { status: 409 });
+  }
+  if (result === "missing") {
+    return NextResponse.json({ error: "ログイン処理が見つかりません" }, { status: 404 });
+  }
+
+  await store.remove(id);
+  return new NextResponse(null, { status: 204 });
+}

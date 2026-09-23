@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -44,6 +44,16 @@ export class AccountStore {
 
   async get(id: string): Promise<StoredAccount | null> {
     return (await this.list()).find((account) => account.id === id) ?? null;
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const accounts = await this.list();
+    const account = accounts.find((candidate) => candidate.id === id);
+    if (!account) return false;
+
+    await rm(account.codexHome, { recursive: true, force: true });
+    await this.writeAccounts(accounts.filter((candidate) => candidate.id !== id));
+    return true;
   }
 
   private async writeAccounts(accounts: StoredAccount[]) {
