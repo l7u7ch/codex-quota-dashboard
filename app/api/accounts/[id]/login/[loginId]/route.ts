@@ -28,7 +28,9 @@ export async function GET(
     if (!account) {
       return NextResponse.json({ error: "アカウントが見つかりません" }, { status: 404 });
     }
-    await getAccountStore().persist(account);
+    if (loginManager.shouldPersist(id, loginId)) {
+      await getAccountStore().persist(account);
+    }
   }
   return NextResponse.json(state);
 }
@@ -45,6 +47,7 @@ export async function DELETE(
   const { id, loginId } = await context.params;
   const store = getAccountStore();
   const account = loginManager.getAccount(id, loginId);
+  const isRegistered = await store.get(id);
 
   const result = loginManager.discard(id, loginId);
   if (result === "complete") {
@@ -57,6 +60,6 @@ export async function DELETE(
   if (!account) {
     return NextResponse.json({ error: "ログイン処理が見つかりません" }, { status: 404 });
   }
-  await store.discardPending(account);
+  if (!isRegistered) await store.discardPending(account);
   return new NextResponse(null, { status: 204 });
 }

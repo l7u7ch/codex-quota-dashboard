@@ -23,6 +23,7 @@ type LoginState = {
 type LoginSession = {
   account: StoredAccount;
   state: LoginState;
+  persistOnComplete: boolean;
   close(): void;
   timeout: ReturnType<typeof setTimeout>;
 };
@@ -34,7 +35,10 @@ export class LoginManager {
     private readonly startClient: LoginClientFactory = CodexAppServerClient.start,
   ) {}
 
-  async begin(account: StoredAccount): Promise<DeviceLogin> {
+  async begin(
+    account: StoredAccount,
+    options: { persistOnComplete?: boolean } = {},
+  ): Promise<DeviceLogin> {
     const client = await this.startClient(account.codexHome);
     try {
       const login = await client.startDeviceLogin();
@@ -49,6 +53,7 @@ export class LoginManager {
       this.logins.set(key, {
         account,
         state: { loginId: login.loginId, status: "pending" },
+        persistOnComplete: options.persistOnComplete ?? true,
         close: client.close,
         timeout,
       });
@@ -80,6 +85,19 @@ export class LoginManager {
 
   getAccount(accountId: string, loginId: string) {
     return this.logins.get(this.key(accountId, loginId))?.account ?? null;
+  }
+
+  shouldPersist(accountId: string, loginId: string) {
+    return this.logins.get(this.key(accountId, loginId))?.persistOnComplete ?? false;
+  }
+
+  cancelAccount(accountId: string) {
+    for (const [key, session] of this.logins) {
+      if (session.account.id !== accountId) continue;
+      clearTimeout(session.timeout);
+      if (session.state.status === "pending") session.close();
+      this.logins.delete(key);
+    }
   }
 
   discard(accountId: string, loginId: string) {

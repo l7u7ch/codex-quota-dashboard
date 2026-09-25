@@ -20,13 +20,7 @@ export async function GET() {
   const store = getAccountStore();
   const storedAccounts = await store.list();
   const usage = await Promise.all(storedAccounts.map((account) => loadAccountUsage(account)));
-  const abandonedIds = usage
-    .filter((account) => account.status === "signed-out")
-    .map((account) => account.id);
-  await Promise.all(abandonedIds.map((id) => store.remove(id)));
-  return NextResponse.json({
-    accounts: usage.filter((account) => !abandonedIds.includes(account.id)),
-  });
+  return NextResponse.json({ accounts: usage });
 }
 
 export async function POST(request: Request) {

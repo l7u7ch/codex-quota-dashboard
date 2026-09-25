@@ -1,23 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Copy,
-  LoaderCircle,
-  LogOut,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+import { Copy, LoaderCircle, LogOut, Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { AccountCard } from "@/components/account-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -25,6 +19,7 @@ import {
 import type { AccountUsage } from "@/lib/accounts/account-usage";
 
 type LoginPrompt = {
+  mode: "add" | "reauthenticate";
   accountId: string;
   loginId: string;
   verificationUrl: string;
@@ -43,6 +38,16 @@ export function Dashboard({
   const [submitting, setSubmitting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [actionPendingId, setActionPendingId] = useState<string | null>(null);
+  const [renamingAccount, setRenamingAccount] = useState<AccountUsage | null>(
+    null,
+  );
+  const [displayNameInput, setDisplayNameInput] = useState("");
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<AccountUsage | null>(
+    null,
+  );
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [login, setLogin] = useState<LoginPrompt | null>(null);
 
   const refresh = useCallback(async (quiet = false) => {
@@ -73,7 +78,7 @@ export function Dashboard({
         );
         if (response.status === 409) await refresh(true);
       } catch {
-        toast.error("未完了のアカウントを削除できませんでした");
+        toast.error("ログイン処理を中断できませんでした");
       }
     },
     [refresh],
@@ -93,7 +98,11 @@ export function Dashboard({
       };
       if (result.status === "complete") {
         window.clearInterval(timer);
-        toast.success("ChatGPTアカウントを追加しました");
+        toast.success(
+          login.mode === "add"
+            ? "ChatGPTアカウントを追加しました"
+            : "ChatGPTアカウントを再認証しました",
+        );
         setDialogOpen(false);
         setLogin(null);
         await refresh(true);
@@ -121,7 +130,7 @@ export function Dashboard({
         error?: string;
       };
       if (!response.ok) throw new Error(result.error);
-      setLogin(result);
+      setLogin({ ...result, mode: "add" });
       setDialogOpen(true);
     } catch (error) {
       toast.error(
@@ -131,6 +140,89 @@ export function Dashboard({
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function reauthenticateAccount(account: AccountUsage) {
+    if (login) return;
+    setActionPendingId(account.id);
+    try {
+      const response = await fetch(`/api/accounts/${account.id}/login`, {
+        method: "POST",
+      });
+      const result = (await response.json()) as LoginPrompt & {
+        error?: string;
+      };
+      if (!response.ok) throw new Error(result.error);
+      setLogin({ ...result, mode: "reauthenticate" });
+      setDialogOpen(true);
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "再ログインを開始できませんでした",
+      );
+    } finally {
+      setActionPendingId(null);
+    }
+  }
+
+  async function saveDisplayName() {
+    if (!renamingAccount) return;
+    setSavingDisplayName(true);
+    try {
+      const displayName = displayNameInput.trim() || null;
+      const response = await fetch(`/api/accounts/${renamingAccount.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ displayName }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error);
+      setAccounts((current) =>
+        current.map((account) =>
+          account.id === renamingAccount.id
+            ? { ...account, displayName }
+            : account,
+        ),
+      );
+      setRenamingAccount(null);
+      toast.success("表示名を変更しました");
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "表示名を変更できませんでした",
+      );
+    } finally {
+      setSavingDisplayName(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (!accountToDelete) return;
+    setDeletingAccount(true);
+    try {
+      const response = await fetch(`/api/accounts/${accountToDelete.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const result = (await response.json()) as { error?: string };
+        throw new Error(result.error);
+      }
+      setAccounts((current) =>
+        current.filter((account) => account.id !== accountToDelete.id),
+      );
+      setAccountToDelete(null);
+      toast.success("ChatGPTアカウントを削除しました");
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "アカウントを削除できませんでした",
+      );
+    } finally {
+      setDeletingAccount(false);
     }
   }
 
@@ -167,21 +259,25 @@ export function Dashboard({
           </div>
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => void refresh()}
-              disabled={refreshing}
-            >
-              <RefreshCw className={refreshing ? "animate-spin" : ""} />
-              更新
-            </Button>
-            <Button
-              onClick={() => void addAccount()}
-              disabled={submitting}
-            >
-              {submitting ? <LoaderCircle className="animate-spin" /> : <Plus />}
-              アカウントを追加
-            </Button>
+              <Button
+                variant="outline"
+                onClick={() => void refresh()}
+                disabled={refreshing}
+              >
+                <RefreshCw className={refreshing ? "animate-spin" : ""} />
+                更新
+              </Button>
+              <Button
+                onClick={() => void addAccount()}
+                disabled={submitting || Boolean(login)}
+              >
+                {submitting ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <Plus />
+                )}
+                アカウントを追加
+              </Button>
             </div>
             <div className="border-l pl-4">
               <Button
@@ -189,7 +285,11 @@ export function Dashboard({
                 onClick={() => setLogoutDialogOpen(true)}
                 disabled={loggingOut}
               >
-                {loggingOut ? <LoaderCircle className="animate-spin" /> : <LogOut />}
+                {loggingOut ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <LogOut />
+                )}
                 ログアウト
               </Button>
             </div>
@@ -205,15 +305,17 @@ export function Dashboard({
             >
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>ChatGPTアカウントを追加</DialogTitle>
-                  <DialogDescription>
-                    認証情報はこのサーバー上のアカウント別プロファイルに保存されます。
-                  </DialogDescription>
+                  {/* <DialogTitle>ChatGPTアカウントを追加</DialogTitle> */}
+                  {/* <DialogDescription> */}
+                  {/* 認証情報はこのサーバー上のアカウント別プロファイルに保存されます。 */}
+                  {/* </DialogDescription> */}
                 </DialogHeader>
                 {login ? (
                   <div className="space-y-5">
                     <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">認証コード</p>
+                      <p className="text-sm text-muted-foreground">
+                        認証コード
+                      </p>
                       <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-4">
                         <p className="min-w-0 flex-1 font-mono text-2xl font-semibold tracking-widest">
                           {login.userCode}
@@ -254,9 +356,9 @@ export function Dashboard({
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>ログアウトしますか？</DialogTitle>
-            <DialogDescription>
-              このブラウザで保存されているログイン状態を終了します。
-            </DialogDescription>
+            {/* <DialogDescription> */}
+            {/* このブラウザで保存されているログイン状態を終了します。 */}
+            {/* </DialogDescription> */}
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
@@ -297,11 +399,29 @@ export function Dashboard({
                     >
                       週間枠
                     </th>
+                    <th
+                      scope="col"
+                      className="w-16 px-3 py-3 text-right font-medium"
+                    >
+                      操作
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {accounts.map((account) => (
-                    <AccountCard key={account.id} account={account} />
+                    <AccountCard
+                      key={account.id}
+                      account={account}
+                      busy={actionPendingId === account.id || Boolean(login)}
+                      onRename={(selected) => {
+                        setRenamingAccount(selected);
+                        setDisplayNameInput(selected.displayName ?? "");
+                      }}
+                      onReauthenticate={(selected) =>
+                        void reauthenticateAccount(selected)
+                      }
+                      onDelete={setAccountToDelete}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -316,6 +436,98 @@ export function Dashboard({
           </div>
         )}
       </main>
+
+      <Dialog
+        open={Boolean(renamingAccount)}
+        onOpenChange={(open) => {
+          if (!open && !savingDisplayName) setRenamingAccount(null);
+        }}
+      >
+        <DialogContent showCloseButton={!savingDisplayName}>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveDisplayName();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>表示名の変更</DialogTitle>
+              {/* <DialogDescription> */}
+              {/* 空欄にするとChatGPTアカウントのメールアドレスを表示します。 */}
+              {/* </DialogDescription> */}
+            </DialogHeader>
+            <div className="py-4">
+              <label
+                htmlFor="account-display-name"
+                className="mb-2 block text-sm font-medium"
+              >
+                表示名
+              </label>
+              <Input
+                id="account-display-name"
+                value={displayNameInput}
+                onChange={(event) => setDisplayNameInput(event.target.value)}
+                maxLength={50}
+                autoFocus
+                disabled={savingDisplayName}
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingDisplayName}
+                >
+                  キャンセル
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={savingDisplayName}>
+                {savingDisplayName ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : null}
+                保存
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(accountToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingAccount) setAccountToDelete(null);
+        }}
+      >
+        <DialogContent showCloseButton={!deletingAccount}>
+          <DialogHeader>
+            <DialogTitle>ChatGPTアカウントを削除しますか？</DialogTitle>
+            {/* <DialogDescription>
+              {accountToDelete?.displayName ||
+                accountToDelete?.email ||
+                "このアカウント"}
+              を削除します。保存された認証情報もサーバーから削除されます。
+            </DialogDescription> */}
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={deletingAccount}>
+                キャンセル
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={() => void deleteAccount()}
+              disabled={deletingAccount}
+            >
+              {deletingAccount ? (
+                <LoaderCircle className="animate-spin" />
+              ) : null}
+              削除する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

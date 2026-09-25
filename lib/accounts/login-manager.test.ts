@@ -85,4 +85,26 @@ describe("LoginManager", () => {
     expect(manager.status(account.id, "login-3")).toBeNull();
     expect(close).toHaveBeenCalledOnce();
   });
+
+  it("does not mark reauthentication as a new account and cancels its session", async () => {
+    const connection = new EventEmitter();
+    const close = vi.fn();
+    const manager = new LoginManager(async () => ({
+      connection,
+      startDeviceLogin: async () => ({
+        type: "chatgptDeviceCode" as const,
+        loginId: "reauth-1",
+        verificationUrl: "https://auth.openai.com/codex/device",
+        userCode: "REAUTH-12",
+      }),
+      close,
+    }));
+
+    await manager.begin(account, { persistOnComplete: false });
+
+    expect(manager.shouldPersist(account.id, "reauth-1")).toBe(false);
+    manager.cancelAccount(account.id);
+    expect(manager.status(account.id, "reauth-1")).toBeNull();
+    expect(close).toHaveBeenCalledOnce();
+  });
 });

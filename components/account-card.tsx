@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LoaderCircle, LogIn, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { AccountUsage } from "@/lib/accounts/account-usage";
 
@@ -45,7 +47,19 @@ function remainingProgressColor(remainingPercent: number) {
   return "bg-red-500";
 }
 
-export function AccountCard({ account }: { account: AccountUsage }) {
+export function AccountCard({
+  account,
+  busy = false,
+  onRename,
+  onReauthenticate,
+  onDelete,
+}: {
+  account: AccountUsage;
+  busy?: boolean;
+  onRename: (account: AccountUsage) => void;
+  onReauthenticate: (account: AccountUsage) => void;
+  onDelete: (account: AccountUsage) => void;
+}) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -61,9 +75,14 @@ export function AccountCard({ account }: { account: AccountUsage }) {
     <tr className="border-b border-border/70 last:border-0">
       <th scope="row" className="w-[28%] min-w-64 px-5 py-6 text-left align-middle font-normal">
         <div className="flex items-center gap-3">
-          <span id={`account-${account.id}`} className="font-medium text-foreground">
-            {account.email ?? "認証中のアカウント"}
-          </span>
+          <div className="min-w-0">
+            <span id={`account-${account.id}`} className="font-medium text-foreground">
+              {account.displayName || account.email || "認証中のアカウント"}
+            </span>
+            {account.displayName && account.email ? (
+              <p className="mt-1 text-xs text-muted-foreground">{account.email}</p>
+            ) : null}
+          </div>
           {account.planType ? (
             <Badge variant="secondary" className="h-5 rounded-sm px-1.5 text-[10px] uppercase tracking-wider">
               {account.planType}
@@ -122,6 +141,49 @@ export function AccountCard({ account }: { account: AccountUsage }) {
           </span>
         </td>
       )}
+
+      <td className="px-3 py-6 text-right align-middle">
+        <DropdownMenuPrimitive.Root>
+          <DropdownMenuPrimitive.Trigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`${account.displayName || account.email || "ChatGPTアカウント"}の操作`}
+              disabled={busy}
+            >
+              {busy ? <LoaderCircle className="animate-spin" /> : <MoreHorizontal />}
+            </Button>
+          </DropdownMenuPrimitive.Trigger>
+          <DropdownMenuPrimitive.Portal>
+            <DropdownMenuPrimitive.Content
+              align="end"
+              className="z-50 min-w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+            >
+              <DropdownMenuPrimitive.Item
+                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground"
+                onSelect={() => onRename(account)}
+              >
+                <Pencil className="size-4 shrink-0" aria-hidden="true" />
+                表示名を変更
+              </DropdownMenuPrimitive.Item>
+              <DropdownMenuPrimitive.Item
+                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground"
+                onSelect={() => onReauthenticate(account)}
+              >
+                <LogIn className="size-4 shrink-0" aria-hidden="true" />
+                再ログイン
+              </DropdownMenuPrimitive.Item>
+              <DropdownMenuPrimitive.Item
+                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none focus:bg-accent focus:text-destructive"
+                onSelect={() => onDelete(account)}
+              >
+                <Trash2 className="size-4 shrink-0" aria-hidden="true" />
+                削除
+              </DropdownMenuPrimitive.Item>
+            </DropdownMenuPrimitive.Content>
+          </DropdownMenuPrimitive.Portal>
+        </DropdownMenuPrimitive.Root>
+      </td>
     </tr>
   );
 }

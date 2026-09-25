@@ -6,6 +6,7 @@ export type StoredAccount = {
   id: string;
   codexHome: string;
   createdAt: string;
+  displayName?: string;
 };
 
 export class AccountStore {
@@ -48,6 +49,22 @@ export class AccountStore {
 
   async get(id: string): Promise<StoredAccount | null> {
     return (await this.list()).find((account) => account.id === id) ?? null;
+  }
+
+  async updateDisplayName(
+    id: string,
+    displayName: string | null,
+  ): Promise<StoredAccount | null> {
+    const accounts = await this.list();
+    const index = accounts.findIndex((account) => account.id === id);
+    if (index < 0) return null;
+
+    const updated = { ...accounts[index] };
+    if (displayName) updated.displayName = displayName;
+    else delete updated.displayName;
+    accounts[index] = updated;
+    await this.writeAccounts(accounts);
+    return updated;
   }
 
   async remove(id: string): Promise<boolean> {

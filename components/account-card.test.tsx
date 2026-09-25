@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { AccountCard, formatTimeUntilReset } from "@/components/account-card";
@@ -6,6 +6,7 @@ import type { AccountUsage } from "@/lib/accounts/account-usage";
 
 const account: AccountUsage = {
   id: "account-1",
+  displayName: null,
   email: "me@example.com",
   planType: "plus",
   status: "ready",
@@ -28,7 +29,18 @@ const account: AccountUsage = {
 };
 
 function renderAccount(accountOverride: AccountUsage = account) {
-  return render(<table><tbody><AccountCard account={accountOverride} /></tbody></table>);
+  return render(
+    <table>
+      <tbody>
+        <AccountCard
+          account={accountOverride}
+          onRename={() => {}}
+          onReauthenticate={() => {}}
+          onDelete={() => {}}
+        />
+      </tbody>
+    </table>,
+  );
 }
 
 describe("AccountCard", () => {
@@ -42,6 +54,30 @@ describe("AccountCard", () => {
     expect(screen.getByText("72")).toBeInTheDocument();
     expect(screen.getByText("41")).toBeInTheDocument();
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
+  });
+
+  it("shows a custom display name while keeping the email visible", () => {
+    const { container } = renderAccount({ ...account, displayName: "Work account" });
+    const card = within(container);
+
+    expect(card.getByText("Work account")).toBeInTheDocument();
+    expect(card.getByText("me@example.com")).toBeInTheDocument();
+  });
+
+  it("shows an icon for each account action", async () => {
+    fireEvent.pointerDown(screen.getByRole("button", { name: "me@example.comの操作" }), {
+      button: 0,
+      ctrlKey: false,
+      pointerType: "mouse",
+    });
+
+    const rename = await screen.findByRole("menuitem", { name: "表示名を変更" });
+    const reauthenticate = screen.getByRole("menuitem", { name: "再ログイン" });
+    const remove = screen.getByRole("menuitem", { name: "削除" });
+
+    expect(rename.querySelector("svg")).not.toBeNull();
+    expect(reauthenticate.querySelector("svg")).not.toBeNull();
+    expect(remove.querySelector("svg")).not.toBeNull();
   });
 
   it.each([

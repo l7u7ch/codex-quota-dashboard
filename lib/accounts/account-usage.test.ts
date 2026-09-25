@@ -30,6 +30,7 @@ describe("loadAccountUsage", () => {
     }));
 
     expect(result.status).toBe("ready");
+    expect(result.displayName).toBeNull();
     expect(result.email).toBe("me@example.com");
     expect(result.planType).toBe("plus");
     expect(result.windows.map((window) => window.remainingPercent)).toEqual([72, 41]);

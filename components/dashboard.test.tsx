@@ -18,6 +18,7 @@ vi.mock("next/navigation", () => ({
 const accounts = [
   {
     id: "account-1",
+    displayName: null,
     email: "me@example.com",
     planType: "plus",
     status: "ready" as const,
@@ -32,6 +33,14 @@ const accounts = [
     ],
   },
 ];
+
+function openAccountMenu() {
+  fireEvent.pointerDown(screen.getByRole("button", { name: "me@example.comの操作" }), {
+    button: 0,
+    ctrlKey: false,
+    pointerType: "mouse",
+  });
+}
 
 describe("Dashboard", () => {
   afterEach(() => {
@@ -186,5 +195,85 @@ describe("Dashboard", () => {
       "/api/accounts/account-2/login/login-2",
       { method: "DELETE" },
     );
+  });
+
+  it("renames a registered account and refreshes the account list", async () => {
+    const updatedAccount = { ...accounts[0], displayName: "Work account" };
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/accounts/account-1" && init?.method === "PATCH") {
+        return { ok: true, json: async () => ({}) };
+      }
+      if (url === "/api/accounts") {
+        return { ok: true, json: async () => ({ accounts: [updatedAccount] }) };
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    openAccountMenu();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "表示名を変更" }));
+    fireEvent.change(screen.getByLabelText("表示名"), { target: { value: "Work account" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/accounts/account-1", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ displayName: "Work account" }),
+      });
+    });
+    expect(await screen.findByText("Work account")).toBeInTheDocument();
+    expect(screen.getByText("me@example.com")).toBeInTheDocument();
+  });
+
+  it("starts reauthentication for a registered account", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        accountId: "account-1",
+        loginId: "reauth-login",
+        verificationUrl: "https://auth.openai.com/device",
+        userCode: "REAUTH-12",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    openAccountMenu();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "再ログイン" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/accounts/account-1/login", {
+        method: "POST",
+      });
+    });
+    expect(await screen.findByText("REAUTH-12")).toBeInTheDocument();
+  });
+
+  it("asks for confirmation before deleting a registered account", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/accounts/account-1" && init?.method === "DELETE") {
+        return { ok: true, json: async () => ({}) };
+      }
+      if (url === "/api/accounts") {
+        return { ok: true, json: async () => ({ accounts: [] }) };
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={accounts} />);
+    openAccountMenu();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "削除" }));
+
+    expect(await screen.findByRole("heading", { name: "ChatGPTアカウントを削除しますか？" })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "削除する" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/accounts/account-1", { method: "DELETE" });
+    });
+    await waitFor(() => expect(screen.queryByText("me@example.com")).not.toBeInTheDocument());
   });
 });
