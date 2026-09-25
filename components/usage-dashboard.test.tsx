@@ -69,6 +69,20 @@ describe("UsageDashboard", () => {
     expect(screen.getByText("20分前")).toBeInTheDocument();
   });
 
+  it("shows the current-to-reset remaining forecast beside the observed trend", async () => {
+    stubUsageResponse();
+    render(<UsageDashboard />);
+
+    const projection = await screen.findByRole("img", {
+      name: "5時間の使用制限の残量予測",
+    });
+    expect(projection).toBeInTheDocument();
+    expect(screen.getByText("予測残量の見通し")).toBeInTheDocument();
+    expect(screen.getByText("観測された使用率")).toBeInTheDocument();
+    expect(projection.querySelector('[data-testid="projection-line"]')).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "5時間の使用制限の使用率推移" })).toBeInTheDocument();
+  });
+
   it("says it is still collecting observations instead of implying a forecast", async () => {
     stubUsageResponse();
     const fetchMock = vi.mocked(fetch);

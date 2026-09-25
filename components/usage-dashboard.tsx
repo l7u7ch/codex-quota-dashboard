@@ -6,6 +6,7 @@ import { AlertCircle, LoaderCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { RemainingProjection } from "@/components/remaining-projection";
 import type { UsageForecastAccount, UsageForecastResponse, UsageForecastWindow } from "@/lib/usage/types";
 import type { UsageForecastStatus, UsageSample } from "@/lib/usage/forecast";
 
@@ -153,9 +154,12 @@ function WindowForecast({ window, sampledAt }: { window: UsageForecastWindow; sa
           <ForecastDetails window={window} minutesUntilPrediction={minutesUntilPrediction} />
         </div>
       </div>
-      <div className="space-y-2 border-t border-border/60 pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
-        <p className="text-xs font-medium text-muted-foreground">直近1時間の使用率</p>
-        <UsageTrend label={window.label} samples={window.samples} />
+      <div className="space-y-4 border-t border-border/60 pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+        <RemainingProjection window={window} sampledAt={sampledAt} />
+        <div className="space-y-2 border-t border-border/60 pt-3">
+          <p className="text-xs font-medium text-muted-foreground">観測された使用率</p>
+          <UsageTrend label={window.label} samples={window.samples} />
+        </div>
       </div>
     </section>
   );
