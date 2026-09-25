@@ -29,6 +29,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
       });
       if (!response.ok) {
         setError("IDまたはパスワードが正しくありません。");
+        setSubmitting(false);
         return;
       }
       if (onAuthenticated) {
@@ -38,7 +39,6 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
       }
     } catch {
       setError("ログインできませんでした。時間をおいて再試行してください。");
-    } finally {
       setSubmitting(false);
     }
   }

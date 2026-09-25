@@ -36,6 +36,22 @@ describe("LoginForm", () => {
     expect(onAuthenticated).toHaveBeenCalledOnce();
   });
 
+  it("keeps the login button pending until navigation unmounts the form", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<LoginForm />);
+    fireEvent.change(screen.getByLabelText("ID"), { target: { value: "owner" } });
+    fireEvent.change(screen.getByLabelText("パスワード"), { target: { value: "password" } });
+    fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
+    const button = screen.getByRole("button", { name: "ログイン中…" });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("shows an error when the credentials are rejected", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 
@@ -45,5 +61,6 @@ describe("LoginForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("IDまたはパスワードが正しくありません。");
+    expect(screen.getByRole("button", { name: "ログイン" })).toBeEnabled();
   });
 });
