@@ -34,8 +34,13 @@ const accounts = [
   },
 ];
 
-function openAccountMenu() {
-  fireEvent.pointerDown(screen.getByRole("button", { name: "me@example.comの操作" }), {
+const twoAccounts = [
+  accounts[0],
+  { ...accounts[0], id: "account-2", email: "personal@example.com" },
+];
+
+function openAccountMenu(email = "me@example.com") {
+  fireEvent.pointerDown(screen.getByRole("button", { name: `${email}の操作` }), {
     button: 0,
     ctrlKey: false,
     pointerType: "mouse",
@@ -225,6 +230,30 @@ describe("Dashboard", () => {
     });
     expect(await screen.findByText("Work account")).toBeInTheDocument();
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
+  });
+
+  it("moves an account up and persists the new order", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Dashboard initialAccounts={twoAccounts} />);
+    openAccountMenu("personal@example.com");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "上へ移動" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/accounts", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountIds: ["account-2", "account-1"] }),
+      });
+    });
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll("tbody tr th")).map(
+          (cell) => cell.querySelector('span[id^="account-"]')?.textContent,
+        ),
+      ).toEqual(["personal@example.com", "me@example.com"]);
+    });
   });
 
   it("hides reauthentication for a registered account", async () => {

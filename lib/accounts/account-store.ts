@@ -47,6 +47,23 @@ export class AccountStore {
     await this.writeAccounts([...accounts, account]);
   }
 
+  async reorder(accountIds: string[]): Promise<StoredAccount[] | null> {
+    const accounts = await this.list();
+    if (
+      accountIds.length !== accounts.length ||
+      new Set(accountIds).size !== accounts.length ||
+      accountIds.some((id) => !accounts.some((account) => account.id === id))
+    ) {
+      return null;
+    }
+
+    const reordered = accountIds.map(
+      (id) => accounts.find((account) => account.id === id)!,
+    );
+    await this.writeAccounts(reordered);
+    return reordered;
+  }
+
   async get(id: string): Promise<StoredAccount | null> {
     return (await this.list()).find((account) => account.id === id) ?? null;
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, LoaderCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Badge } from "@/components/ui/badge";
@@ -50,11 +50,19 @@ function remainingProgressColor(remainingPercent: number) {
 export function AccountCard({
   account,
   busy = false,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
   onRename,
   onDelete,
 }: {
   account: AccountUsage;
   busy?: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: (account: AccountUsage) => void;
+  onMoveDown: (account: AccountUsage) => void;
   onRename: (account: AccountUsage) => void;
   onReauthenticate: (account: AccountUsage) => void;
   onDelete: (account: AccountUsage) => void;
@@ -168,6 +176,22 @@ export function AccountCard({
               align="end"
               className="z-50 min-w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
             >
+              <DropdownMenuPrimitive.Item
+                disabled={busy || !canMoveUp}
+                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                onSelect={() => onMoveUp(account)}
+              >
+                <ArrowUp className="size-4 shrink-0" aria-hidden="true" />
+                上へ移動
+              </DropdownMenuPrimitive.Item>
+              <DropdownMenuPrimitive.Item
+                disabled={busy || !canMoveDown}
+                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                onSelect={() => onMoveDown(account)}
+              >
+                <ArrowDown className="size-4 shrink-0" aria-hidden="true" />
+                下へ移動
+              </DropdownMenuPrimitive.Item>
               <DropdownMenuPrimitive.Item
                 className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground"
                 onSelect={() => onRename(account)}

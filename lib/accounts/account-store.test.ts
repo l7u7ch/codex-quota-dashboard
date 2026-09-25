@@ -45,6 +45,20 @@ describe("AccountStore", () => {
     await expect(store.list()).resolves.toEqual([account]);
   });
 
+  it("reorders registered accounts and rejects incomplete orders", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "codex-dashboard-"));
+    const store = new AccountStore(root);
+    const first = await store.createPending();
+    const second = await store.createPending();
+    await store.persist(first);
+    await store.persist(second);
+
+    await expect(store.reorder([second.id, first.id])).resolves.toEqual([second, first]);
+    await expect(store.list()).resolves.toEqual([second, first]);
+    await expect(store.reorder([first.id])).resolves.toBeNull();
+    await expect(store.list()).resolves.toEqual([second, first]);
+  });
+
   it("removes a registered account and its Codex profile", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "codex-dashboard-"));
     const store = new AccountStore(root);

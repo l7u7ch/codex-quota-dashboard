@@ -23,6 +23,33 @@ export async function GET() {
   return NextResponse.json({ accounts: usage });
 }
 
+export async function PATCH(request: Request) {
+  const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!isValidSession(sessionToken, await getAuthStore().read())) {
+    return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+  }
+
+  const body: unknown = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "アカウントの順序を確認してください" }, { status: 400 });
+  }
+
+  const accountIds = (body as { accountIds?: unknown }).accountIds;
+  if (
+    !Array.isArray(accountIds) ||
+    !accountIds.every((id) => typeof id === "string" && id.length > 0)
+  ) {
+    return NextResponse.json({ error: "アカウントの順序を確認してください" }, { status: 400 });
+  }
+
+  const orderedAccounts = await getAccountStore().reorder(accountIds);
+  if (!orderedAccounts) {
+    return NextResponse.json({ error: "アカウント一覧が更新されています。再読み込みしてください" }, { status: 409 });
+  }
+
+  return NextResponse.json({ accountIds: orderedAccounts.map((account) => account.id) });
+}
+
 export async function POST(request: Request) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!isValidSession(sessionToken, await getAuthStore().read())) {

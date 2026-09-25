@@ -28,12 +28,19 @@ const account: AccountUsage = {
   ],
 };
 
-function renderAccount(accountOverride: AccountUsage = account) {
+function renderAccount(
+  accountOverride: AccountUsage = account,
+  moveOptions: { canMoveUp?: boolean; canMoveDown?: boolean } = {},
+) {
   return render(
     <table>
       <tbody>
         <AccountCard
           account={accountOverride}
+          canMoveUp={moveOptions.canMoveUp ?? false}
+          canMoveDown={moveOptions.canMoveDown ?? false}
+          onMoveUp={() => {}}
+          onMoveDown={() => {}}
           onRename={() => {}}
           onReauthenticate={() => {}}
           onDelete={() => {}}
@@ -91,6 +98,25 @@ describe("AccountCard", () => {
     expect(rename.querySelector("svg")).not.toBeNull();
     expect(remove.querySelector("svg")).not.toBeNull();
     expect(menu.queryByRole("menuitem", { name: "再ログイン" })).not.toBeInTheDocument();
+  });
+
+  it("disables moving past either account-list boundary", async () => {
+    const { container } = renderAccount(account, { canMoveUp: false, canMoveDown: true });
+    fireEvent.pointerDown(within(container).getByRole("button", { name: "me@example.comの操作" }), {
+      button: 0,
+      ctrlKey: false,
+      pointerType: "mouse",
+    });
+    const menu = within(await screen.findByRole("menu"));
+
+    expect(menu.getByRole("menuitem", { name: "上へ移動" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(menu.getByRole("menuitem", { name: "下へ移動" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
   it.each([

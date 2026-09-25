@@ -24,7 +24,7 @@ vi.mock("@/lib/auth/session", () => ({
   SESSION_COOKIE_NAME: "dashboard_session",
 }));
 
-import { GET } from "@/app/api/accounts/route";
+import { GET, PATCH } from "@/app/api/accounts/route";
 
 describe("GET /api/accounts", () => {
   it("keeps signed-out accounts available for reauthentication", async () => {
@@ -52,5 +52,48 @@ describe("GET /api/accounts", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ accounts: [usage] });
     expect(store.remove).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/accounts", () => {
+  it("persists the requested account order", async () => {
+    const orderedAccounts = [
+      { id: "account-2", codexHome: "/profiles/account-2", createdAt: "2026-09-24T00:00:00.000Z" },
+      { id: "account-1", codexHome: "/profiles/account-1", createdAt: "2026-09-23T00:00:00.000Z" },
+    ];
+    const store = { reorder: vi.fn().mockResolvedValue(orderedAccounts) };
+    getAccountStoreMock.mockReturnValue(store);
+    getAuthStoreMock.mockReturnValue({ read: vi.fn().mockResolvedValue({}) });
+    isValidSessionMock.mockReturnValue(true);
+
+    const response = await PATCH(
+      new Request("http://localhost/api/accounts", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountIds: ["account-2", "account-1"] }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ accountIds: ["account-2", "account-1"] });
+    expect(store.reorder).toHaveBeenCalledWith(["account-2", "account-1"]);
+  });
+
+  it("rejects malformed account order requests", async () => {
+    const store = { reorder: vi.fn() };
+    getAccountStoreMock.mockReturnValue(store);
+    getAuthStoreMock.mockReturnValue({ read: vi.fn().mockResolvedValue({}) });
+    isValidSessionMock.mockReturnValue(true);
+
+    const response = await PATCH(
+      new Request("http://localhost/api/accounts", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountIds: ["account-1", 4] }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(store.reorder).not.toHaveBeenCalled();
   });
 });

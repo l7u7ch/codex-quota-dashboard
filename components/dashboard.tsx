@@ -226,6 +226,40 @@ export function Dashboard({
     }
   }
 
+  async function moveAccount(accountId: string, direction: -1 | 1) {
+    const index = accounts.findIndex((account) => account.id === accountId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= accounts.length) return;
+
+    const reorderedAccounts = [...accounts];
+    [reorderedAccounts[index], reorderedAccounts[targetIndex]] = [
+      reorderedAccounts[targetIndex],
+      reorderedAccounts[index],
+    ];
+
+    setActionPendingId(accountId);
+    try {
+      const response = await fetch("/api/accounts", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountIds: reorderedAccounts.map((account) => account.id) }),
+      });
+      if (!response.ok) {
+        const result = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(result?.error);
+      }
+      setAccounts(reorderedAccounts);
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "アカウントの順序を変更できませんでした",
+      );
+    } finally {
+      setActionPendingId(null);
+    }
+  }
+
   async function logout() {
     setLoggingOut(true);
     try {
@@ -408,11 +442,15 @@ export function Dashboard({
                   </tr>
                 </thead>
                 <tbody>
-                  {accounts.map((account) => (
+                  {accounts.map((account, index) => (
                     <AccountCard
                       key={account.id}
                       account={account}
                       busy={actionPendingId === account.id || Boolean(login)}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < accounts.length - 1}
+                      onMoveUp={(selected) => void moveAccount(selected.id, -1)}
+                      onMoveDown={(selected) => void moveAccount(selected.id, 1)}
                       onRename={(selected) => {
                         setRenamingAccount(selected);
                         setDisplayNameInput(selected.displayName ?? "");
