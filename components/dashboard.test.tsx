@@ -217,8 +217,9 @@ describe("Dashboard", () => {
 
     render(<Dashboard initialAccounts={accounts} />);
     openAccountMenu();
-    fireEvent.click(await screen.findByRole("menuitem", { name: "表示名を変更" }));
-    fireEvent.change(screen.getByLabelText("表示名"), { target: { value: "Work account" } });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "ラベルを変更" }));
+    expect(screen.getByRole("heading", { name: "ラベルの変更" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("ラベル"), { target: { value: "Work account" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
     await waitFor(() => {
@@ -229,7 +230,7 @@ describe("Dashboard", () => {
       });
     });
     expect(await screen.findByText("Work account")).toBeInTheDocument();
-    expect(screen.getByText("me@example.com")).toBeInTheDocument();
+    expect(screen.queryByText("me@example.com")).not.toBeInTheDocument();
   });
 
   it("moves an account up and persists the new order", async () => {
@@ -260,7 +261,7 @@ describe("Dashboard", () => {
     render(<Dashboard initialAccounts={accounts} />);
     openAccountMenu();
 
-    expect(await screen.findByRole("menuitem", { name: "表示名を変更" })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: "ラベルを変更" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "再ログイン" })).not.toBeInTheDocument();
   });
 

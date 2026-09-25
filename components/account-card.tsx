@@ -96,9 +96,6 @@ export function AccountCard({
             <span id={`account-${account.id}`} className="font-medium text-foreground">
               {account.displayName || account.email || "認証中のアカウント"}
             </span>
-            {account.displayName && account.email ? (
-              <p className="mt-1 text-xs text-muted-foreground">{account.email}</p>
-            ) : null}
           </div>
           {account.planType ? (
             <Badge variant="secondary" className="h-5 rounded-sm px-1.5 text-[10px] uppercase tracking-wider">
@@ -197,7 +194,7 @@ export function AccountCard({
                 onSelect={() => onRename(account)}
               >
                 <Pencil className="size-4 shrink-0" aria-hidden="true" />
-                表示名を変更
+                ラベルを変更
               </DropdownMenuPrimitive.Item>
               {/* 一時的に非表示。再有効化するときはアクションを戻す。 */}
               {/*

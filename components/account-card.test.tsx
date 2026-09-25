@@ -75,12 +75,12 @@ describe("AccountCard", () => {
     ).toBeTruthy();
   });
 
-  it("shows a custom display name while keeping the email visible", () => {
+  it("shows only the custom label when one is set", () => {
     const { container } = renderAccount({ ...account, displayName: "Work account" });
     const card = within(container);
 
     expect(card.getByText("Work account")).toBeInTheDocument();
-    expect(card.getByText("me@example.com")).toBeInTheDocument();
+    expect(card.queryByText("me@example.com")).not.toBeInTheDocument();
   });
 
   it("shows icons for available actions and hides reauthentication", async () => {
@@ -92,7 +92,7 @@ describe("AccountCard", () => {
     });
 
     const menu = within(await screen.findByRole("menu"));
-    const rename = menu.getByRole("menuitem", { name: "表示名を変更" });
+    const rename = menu.getByRole("menuitem", { name: "ラベルを変更" });
     const remove = menu.getByRole("menuitem", { name: "削除" });
 
     expect(rename.querySelector("svg")).not.toBeNull();

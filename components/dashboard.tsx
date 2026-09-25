@@ -187,12 +187,12 @@ export function Dashboard({
         ),
       );
       setRenamingAccount(null);
-      toast.success("表示名を変更しました");
+      toast.success("ラベルを変更しました");
     } catch (error) {
       toast.error(
         error instanceof Error && error.message
           ? error.message
-          : "表示名を変更できませんでした",
+          : "ラベルを変更できませんでした",
       );
     } finally {
       setSavingDisplayName(false);
@@ -489,7 +489,7 @@ export function Dashboard({
             }}
           >
             <DialogHeader>
-              <DialogTitle>表示名の変更</DialogTitle>
+              <DialogTitle>ラベルの変更</DialogTitle>
               {/* <DialogDescription> */}
               {/* 空欄にするとChatGPTアカウントのメールアドレスを表示します。 */}
               {/* </DialogDescription> */}
@@ -499,7 +499,7 @@ export function Dashboard({
                 htmlFor="account-display-name"
                 className="mb-2 block text-sm font-medium"
               >
-                表示名
+                ラベル
               </label>
               <Input
                 id="account-display-name"

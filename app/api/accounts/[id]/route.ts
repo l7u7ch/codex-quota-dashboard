@@ -24,17 +24,17 @@ export async function PATCH(
 
   const body: unknown = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body) || !("displayName" in body)) {
-    return NextResponse.json({ error: "表示名を確認してください" }, { status: 400 });
+    return NextResponse.json({ error: "ラベルを確認してください" }, { status: 400 });
   }
 
   const requestedName = (body as { displayName?: unknown }).displayName;
   if (requestedName !== null && typeof requestedName !== "string") {
-    return NextResponse.json({ error: "表示名を確認してください" }, { status: 400 });
+    return NextResponse.json({ error: "ラベルを確認してください" }, { status: 400 });
   }
 
   const displayName = typeof requestedName === "string" ? requestedName.trim() : "";
   if (displayName.length > 50) {
-    return NextResponse.json({ error: "表示名は50文字以内で入力してください" }, { status: 400 });
+    return NextResponse.json({ error: "ラベルは50文字以内で入力してください" }, { status: 400 });
   }
 
   const { id } = await context.params;

@@ -53,7 +53,7 @@ describe("/api/accounts/[id]", () => {
     store.remove.mockResolvedValue(true);
   });
 
-  it("trims and saves a display name", async () => {
+  it("trims and saves an account label", async () => {
     const response = await PATCH(
       new Request("http://localhost/api/accounts/account-1", {
         method: "PATCH",
@@ -68,7 +68,7 @@ describe("/api/accounts/[id]", () => {
     expect(store.updateDisplayName).toHaveBeenCalledWith("account-1", "Work account");
   });
 
-  it("rejects display names longer than 50 characters", async () => {
+  it("rejects labels longer than 50 characters", async () => {
     const response = await PATCH(
       new Request("http://localhost/api/accounts/account-1", {
         method: "PATCH",
@@ -79,6 +79,7 @@ describe("/api/accounts/[id]", () => {
     );
 
     expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "ラベルは50文字以内で入力してください" });
     expect(store.updateDisplayName).not.toHaveBeenCalled();
   });
 
