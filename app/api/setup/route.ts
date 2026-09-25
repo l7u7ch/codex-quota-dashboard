@@ -6,7 +6,10 @@ import { createSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== new URL(request.url).origin) {
+  const url = new URL(request.url);
+  const host = request.headers.get("host") ?? url.host;
+  const protocol = request.headers.get("x-forwarded-proto") ?? url.protocol.slice(0, -1);
+  if (request.headers.get("origin") !== `${protocol}://${host}`) {
     return NextResponse.json({ error: "許可されていないリクエストです。" }, { status: 403 });
   }
 

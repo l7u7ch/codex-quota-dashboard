@@ -3,17 +3,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LoginForm } from "@/components/login-form";
 
-const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+const { pushMock, toastErrorMock } = vi.hoisted(() => ({ pushMock: vi.fn(), toastErrorMock: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
+vi.mock("sonner", () => ({ toast: { error: toastErrorMock } }));
 
 describe("LoginForm", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
     pushMock.mockReset();
+    toastErrorMock.mockReset();
   });
 
   it("submits ID and password then continues after successful login", async () => {
@@ -60,7 +62,8 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("パスワード"), { target: { value: "incorrect" } });
     fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("IDまたはパスワードが正しくありません。");
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith("IDまたはパスワードが正しくありません。"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "ログイン" })).toBeEnabled();
   });
 });

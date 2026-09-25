@@ -61,4 +61,34 @@ describe("POST /api/setup", () => {
     expect((await POST(crossOrigin)).status).toBe(403);
     expect(await getAuthStoreMock().read()).toBeNull();
   });
+
+  it("accepts the public origin behind a TLS-terminating proxy", async () => {
+    const proxied = new Request("http://localhost:3000/api/setup", {
+      method: "POST",
+      headers: {
+        origin: "https://dashboard.example",
+        host: "dashboard.example",
+        "x-forwarded-proto": "https",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ id: "owner", password: "short" }),
+    });
+    expect((await POST(proxied)).status).toBe(200);
+    expect((await getAuthStoreMock().read())?.loginId).toBe("owner");
+  });
+
+  it("rejects a different origin behind the proxy", async () => {
+    const proxied = new Request("http://localhost:3000/api/setup", {
+      method: "POST",
+      headers: {
+        origin: "https://attacker.example",
+        host: "dashboard.example",
+        "x-forwarded-proto": "https",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ id: "owner", password: "short" }),
+    });
+    expect((await POST(proxied)).status).toBe(403);
+    expect(await getAuthStoreMock().read()).toBeNull();
+  });
 });

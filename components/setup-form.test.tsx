@@ -3,14 +3,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SetupForm } from "@/components/setup-form";
 
-const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+const { pushMock, toastErrorMock } = vi.hoisted(() => ({ pushMock: vi.fn(), toastErrorMock: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
+vi.mock("sonner", () => ({ toast: { error: toastErrorMock } }));
 
 describe("SetupForm", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
     pushMock.mockReset();
+    toastErrorMock.mockReset();
   });
 
   it("creates the chosen account then navigates to the dashboard", async () => {
@@ -35,8 +37,26 @@ describe("SetupForm", () => {
     fireEvent.change(screen.getByLabelText("パスワード"), { target: { value: "strong-secret-password" } });
     fireEvent.change(screen.getByLabelText("パスワード（確認）"), { target: { value: "different-password" } });
     fireEvent.click(screen.getByRole("button", { name: "アカウントを作成" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("パスワードが一致しません。");
+    expect(toastErrorMock).toHaveBeenCalledWith("パスワードが一致しません。");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the server's rejection reason in a toast", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: "許可されていないリクエストです。" }),
+    }));
+    render(<SetupForm />);
+    fireEvent.change(screen.getByLabelText("ID"), { target: { value: "owner" } });
+    fireEvent.change(screen.getByLabelText("パスワード"), { target: { value: "short" } });
+    fireEvent.change(screen.getByLabelText("パスワード（確認）"), { target: { value: "short" } });
+    fireEvent.click(screen.getByRole("button", { name: "アカウントを作成" }));
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith("許可されていないリクエストです。"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "アカウントを作成" })).toBeEnabled();
   });
 
   it("submits a short nonempty password", async () => {

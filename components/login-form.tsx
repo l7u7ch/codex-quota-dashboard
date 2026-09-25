@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
@@ -13,12 +14,10 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
   const router = useRouter();
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
     setSubmitting(true);
 
     try {
@@ -28,7 +27,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
         body: JSON.stringify({ id, password }),
       });
       if (!response.ok) {
-        setError("IDまたはパスワードが正しくありません。");
+        toast.error("IDまたはパスワードが正しくありません。");
         setSubmitting(false);
         return;
       }
@@ -38,7 +37,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
         router.push("/");
       }
     } catch {
-      setError("ログインできませんでした。時間をおいて再試行してください。");
+      toast.error("ログインできませんでした。時間をおいて再試行してください。");
       setSubmitting(false);
     }
   }
@@ -70,7 +69,6 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
           value={password}
         />
       </div>
-      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
       <Button className="w-full" disabled={submitting} type="submit">
         {submitting ? "ログイン中…" : "ログイン"}
       </Button>

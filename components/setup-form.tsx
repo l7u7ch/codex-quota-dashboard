@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
@@ -10,14 +11,12 @@ export function SetupForm() {
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
     if (password !== confirmation) {
-      setError("パスワードが一致しません。");
+      toast.error("パスワードが一致しません。");
       return;
     }
     setSubmitting(true);
@@ -28,19 +27,16 @@ export function SetupForm() {
         body: JSON.stringify({ id, password }),
       });
       if (!response.ok) {
-        setError(
-          response.status === 409
-            ? "アカウントは既に作成されています。ログインしてください。"
-            : "アカウントを作成できませんでした。入力を確認してください。",
-        );
+        const result = await response.json().catch(() => null);
+        toast.error(typeof result?.error === "string"
+          ? result.error
+          : "アカウントを作成できませんでした。再試行してください。");
         setSubmitting(false);
         return;
       }
       router.push("/");
     } catch {
-      setError(
-        "アカウントを作成できませんでした。時間をおいて再試行してください。",
-      );
+      toast.error("アカウントを作成できませんでした。時間をおいて再試行してください。");
       setSubmitting(false);
     }
   }
@@ -98,11 +94,6 @@ export function SetupForm() {
           value={confirmation}
         />
       </div>
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
       <Button className="w-full" disabled={submitting} type="submit">
         {submitting ? "作成中…" : "アカウントを作成"}
       </Button>
