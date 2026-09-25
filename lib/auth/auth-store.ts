@@ -1,5 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export type AuthConfig = {
@@ -12,28 +12,40 @@ export class AuthStore {
   private readonly authFile: string;
 
   constructor(private readonly root: string) {
-    this.authFile = path.join(root, "auth.json");
+    // Deliberately ignore legacy auth.json (including the old admin/admin account).
+    this.authFile = path.join(root, "auth-v2.json");
   }
 
-  async read(): Promise<AuthConfig> {
+  async read(): Promise<AuthConfig | null> {
     try {
       return JSON.parse(await readFile(this.authFile, "utf8")) as AuthConfig;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      const auth = createInitialAuthConfig();
-      await this.write(auth);
-      return auth;
+      return null;
     }
   }
 
-  private async write(auth: AuthConfig) {
+  async create(loginId: string, password: string): Promise<AuthConfig> {
+    const auth: AuthConfig = {
+      loginId,
+      passwordHash: hashPassword(password),
+      sessionSigningSecret: randomBytes(32).toString("base64url"),
+    };
     await mkdir(this.root, { recursive: true, mode: 0o700 });
     const temporaryFile = `${this.authFile}.${randomBytes(8).toString("hex")}.tmp`;
-    await writeFile(temporaryFile, `${JSON.stringify(auth, null, 2)}\n`, {
-      encoding: "utf8",
-      mode: 0o600,
-    });
-    await rename(temporaryFile, this.authFile);
+    try {
+      await writeFile(temporaryFile, `${JSON.stringify(auth, null, 2)}\n`, {
+        encoding: "utf8",
+        mode: 0o600,
+        flag: "wx",
+      });
+      await link(temporaryFile, this.authFile);
+    } finally {
+      await unlink(temporaryFile).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+    }
+    return auth;
   }
 }
 
@@ -48,13 +60,6 @@ export function isValidPassword(password: string, passwordHash: string) {
   return candidate.length === expected.length && timingSafeEqual(Buffer.from(candidate), Buffer.from(expected));
 }
 
-function createInitialAuthConfig(): AuthConfig {
-  return {
-    loginId: "admin",
-    passwordHash: hashPassword("admin"),
-    sessionSigningSecret: randomBytes(32).toString("base64url"),
-  };
-}
 
 export function hashPassword(password: string, salt = randomBytes(16).toString("base64url")) {
   return `${salt}.${scryptSync(password, salt, 64).toString("base64url")}`;

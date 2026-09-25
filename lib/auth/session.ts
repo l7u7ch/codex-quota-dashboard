@@ -18,8 +18,8 @@ export function createSession(auth: AuthConfig) {
   return `${expiresAt}.${signature}`;
 }
 
-export function isValidSession(token: string | undefined, auth: AuthConfig) {
-  if (!token) return false;
+export function isValidSession(token: string | undefined, auth: AuthConfig | null) {
+  if (!token || !auth) return false;
 
   const [expiresAtText, signature] = token.split(".");
   const expiresAt = Number(expiresAtText);

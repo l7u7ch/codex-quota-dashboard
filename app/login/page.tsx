@@ -4,13 +4,14 @@ import { isValidSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "ログイン | Codex Quota Dashboard",
-};
+export const dynamic = "force-dynamic";
+// export const metadata = { title: "ログイン | Codex Quota Dashboard" };
 
 export default async function LoginPage() {
+  const auth = await getAuthStore().read();
+  if (!auth) redirect("/setup");
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (isValidSession(sessionToken, await getAuthStore().read())) redirect("/");
+  if (isValidSession(sessionToken, auth)) redirect("/");
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">

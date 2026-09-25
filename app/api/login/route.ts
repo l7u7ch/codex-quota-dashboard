@@ -15,6 +15,10 @@ export async function POST(request: Request) {
   const password = typeof body?.password === "string" ? body.password : "";
   const auth = await getAuthStore().read();
 
+  if (!auth) {
+    return NextResponse.json({ error: "初期アカウントを作成してください。" }, { status: 409 });
+  }
+
   if (!isValidCredential(id, password, auth)) {
     return NextResponse.json({ error: "IDまたはパスワードが正しくありません。" }, { status: 401 });
   }
