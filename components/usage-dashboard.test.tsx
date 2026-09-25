@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { UsageDashboard } from "@/components/usage-dashboard";
@@ -51,15 +51,25 @@ function stubUsageResponse(overrides: Record<string, unknown> = {}) {
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("UsageDashboard", () => {
+  it("links back to account management", async () => {
+    stubUsageResponse({ accounts: [] });
+    render(<UsageDashboard />);
+
+    expect(await screen.findByRole("link", { name: "アカウント管理に戻る" })).toHaveAttribute("href", "/");
+  });
+
   it("shows per-account depletion forecasts and usage history", async () => {
     stubUsageResponse();
     render(<UsageDashboard />);
 
-    expect(await screen.findByRole("heading", { name: "利用ペース予測" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Work" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Work" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "利用ペース予測" })).toBeInTheDocument();
     expect(screen.getByText("今のペースならリセット前に余裕あり")).toBeInTheDocument();
     expect(screen.getByText("リセットまで 1時間")).toBeInTheDocument();
     expect(screen.getByText("60%/時間")).toBeInTheDocument();

@@ -5,7 +5,7 @@ import { getAccountStore } from "@/lib/accounts/account-store";
 import { loadAccountUsage } from "@/lib/accounts/account-usage";
 import { getAuthStore } from "@/lib/auth/auth-store";
 import { isValidSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { calculateUsageForecast } from "@/lib/usage/forecast";
+import { calculateUsageForecast, SAMPLE_WINDOW_MS } from "@/lib/usage/forecast";
 import { getUsageHistoryStore, SAMPLE_INTERVAL_MS } from "@/lib/usage/history-store";
 import type { UsageForecastResponse } from "@/lib/usage/types";
 
@@ -42,7 +42,10 @@ export async function GET() {
       ...account,
       windows: account.windows.map((window) => {
         const storedSamples = (history[account.id]?.[window.id] ?? []).filter(
-          (sample) => sample.resetsAt === window.resetsAt,
+          (sample) =>
+            sample.resetsAt === window.resetsAt &&
+            sample.sampledAt >= sampledAt - SAMPLE_WINDOW_MS &&
+            sample.sampledAt <= sampledAt,
         );
         const currentSample = {
           sampledAt,

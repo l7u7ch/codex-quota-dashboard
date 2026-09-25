@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Copy, LoaderCircle, LogOut, Plus, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -285,13 +286,16 @@ export function Dashboard({
   return (
     <>
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto flex h-16 w-full max-w-[1500px] items-center justify-between px-6 lg:px-10">
+        <div className="mx-auto flex min-h-16 w-full max-w-[1500px] flex-wrap items-center justify-between gap-3 px-6 py-3 lg:px-10">
           <div className="flex items-baseline gap-3">
             <p className="text-sm font-semibold tracking-[0.16em]">
               Codex Quota Dashboard
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button asChild variant="outline">
+              <Link href="/usage">利用ペース予測</Link>
+            </Button>
             <div className="flex gap-2">
               <Button
                 variant="outline"

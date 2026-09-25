@@ -122,4 +122,31 @@ describe("GET /api/usage", () => {
     expect(await response.json()).toEqual({ error: "認証が必要です" });
     expect(list).not.toHaveBeenCalled();
   });
+
+  it("returns only the last hour of observations for the trend chart", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    getAuthStoreMock.mockReturnValue({ read: vi.fn().mockResolvedValue({}) });
+    isValidSessionMock.mockReturnValue(true);
+    getAccountStoreMock.mockReturnValue({ list: vi.fn().mockResolvedValue([{ id: "account-1" }]) });
+    loadAccountUsageMock.mockResolvedValue(usage);
+    getUsageHistoryStoreMock.mockReturnValue({
+      recordSnapshots: vi.fn().mockResolvedValue({
+        "account-1": {
+          "codex-primary": [
+            { sampledAt: now - 24 * 60 * 60_000, usedPercent: 5, resetsAt },
+            { sampledAt: now - 60 * 60_000, usedPercent: 10, resetsAt },
+            { sampledAt: now - 10 * 60_000, usedPercent: 20, resetsAt },
+          ],
+        },
+      }),
+    });
+
+    const response = await GET();
+    const body = await response.json();
+    expect(body.accounts[0].windows[0].samples.map((sample: { sampledAt: number }) => sample.sampledAt)).toEqual([
+      now - 60 * 60_000,
+      now - 10 * 60_000,
+      now,
+    ]);
+  });
 });

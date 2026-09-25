@@ -69,6 +69,12 @@ describe("Dashboard", () => {
     expect(screen.queryByText(/low capacity/i)).not.toBeInTheDocument();
   });
 
+  it("links to the usage forecast from the account dashboard", () => {
+    render(<Dashboard initialAccounts={accounts} />);
+
+    expect(screen.getByRole("link", { name: "利用ペース予測" })).toHaveAttribute("href", "/usage");
+  });
+
   it("asks for confirmation before logging out", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);

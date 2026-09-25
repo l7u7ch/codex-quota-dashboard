@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, LoaderCircle } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -299,6 +300,9 @@ export function UsageDashboard() {
           <p className="max-w-2xl text-sm text-muted-foreground">
             直近の利用率から、リセット前に利用枠へ到達する可能性を推定します。
           </p>
+          <Link href="/" className="inline-block text-sm text-foreground underline underline-offset-4">
+            アカウント管理に戻る
+          </Link>
         </div>
         <div className="text-sm text-muted-foreground" role="status" aria-live="polite">
           {refreshing ? (

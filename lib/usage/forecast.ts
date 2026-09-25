@@ -21,7 +21,7 @@ export type UsageForecast = {
   remainingAtResetPercent: number | null;
 };
 
-const SAMPLE_WINDOW_MS = 60 * 60 * 1_000;
+export const SAMPLE_WINDOW_MS = 60 * 60 * 1_000;
 const MIN_SAMPLE_COUNT = 3;
 const MIN_OBSERVATION_MS = 10 * 60 * 1_000;
 const MAX_TREND_RESIDUAL_PERCENT = 10;
