@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, LoaderCircle, LogIn, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { AlertCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +51,6 @@ export function AccountCard({
   account,
   busy = false,
   onRename,
-  onReauthenticate,
   onDelete,
 }: {
   account: AccountUsage;
@@ -176,6 +175,8 @@ export function AccountCard({
                 <Pencil className="size-4 shrink-0" aria-hidden="true" />
                 表示名を変更
               </DropdownMenuPrimitive.Item>
+              {/* 一時的に非表示。再有効化するときはアクションを戻す。 */}
+              {/*
               <DropdownMenuPrimitive.Item
                 className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground"
                 onSelect={() => onReauthenticate(account)}
@@ -183,6 +184,7 @@ export function AccountCard({
                 <LogIn className="size-4 shrink-0" aria-hidden="true" />
                 再ログイン
               </DropdownMenuPrimitive.Item>
+              */}
               <DropdownMenuPrimitive.Item
                 className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none focus:bg-accent focus:text-destructive"
                 onSelect={() => onDelete(account)}

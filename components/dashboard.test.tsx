@@ -227,28 +227,12 @@ describe("Dashboard", () => {
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
   });
 
-  it("starts reauthentication for a registered account", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        accountId: "account-1",
-        loginId: "reauth-login",
-        verificationUrl: "https://auth.openai.com/device",
-        userCode: "REAUTH-12",
-      }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
+  it("hides reauthentication for a registered account", async () => {
     render(<Dashboard initialAccounts={accounts} />);
     openAccountMenu();
-    fireEvent.click(await screen.findByRole("menuitem", { name: "再ログイン" }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/accounts/account-1/login", {
-        method: "POST",
-      });
-    });
-    expect(await screen.findByText("REAUTH-12")).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: "表示名を変更" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "再ログイン" })).not.toBeInTheDocument();
   });
 
   it("asks for confirmation before deleting a registered account", async () => {

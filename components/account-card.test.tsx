@@ -76,20 +76,21 @@ describe("AccountCard", () => {
     expect(card.getByText("me@example.com")).toBeInTheDocument();
   });
 
-  it("shows an icon for each account action", async () => {
-    fireEvent.pointerDown(screen.getByRole("button", { name: "me@example.comの操作" }), {
+  it("shows icons for available actions and hides reauthentication", async () => {
+    const { container } = renderAccount();
+    fireEvent.pointerDown(within(container).getByRole("button", { name: "me@example.comの操作" }), {
       button: 0,
       ctrlKey: false,
       pointerType: "mouse",
     });
 
-    const rename = await screen.findByRole("menuitem", { name: "表示名を変更" });
-    const reauthenticate = screen.getByRole("menuitem", { name: "再ログイン" });
-    const remove = screen.getByRole("menuitem", { name: "削除" });
+    const menu = within(await screen.findByRole("menu"));
+    const rename = menu.getByRole("menuitem", { name: "表示名を変更" });
+    const remove = menu.getByRole("menuitem", { name: "削除" });
 
     expect(rename.querySelector("svg")).not.toBeNull();
-    expect(reauthenticate.querySelector("svg")).not.toBeNull();
     expect(remove.querySelector("svg")).not.toBeNull();
+    expect(menu.queryByRole("menuitem", { name: "再ログイン" })).not.toBeInTheDocument();
   });
 
   it.each([
