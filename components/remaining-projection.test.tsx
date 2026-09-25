@@ -25,11 +25,33 @@ const baseWindow: UsageForecastWindow = {
 afterEach(() => cleanup());
 
 describe("RemainingProjection", () => {
+  it("combines observed remaining and its forecast on one time axis", () => {
+    render(<RemainingProjection
+      window={{
+        ...baseWindow,
+        samples: [
+          { sampledAt: sampledAt - 20 * 60_000, usedPercent: 10, resetsAt: baseWindow.resetsAt },
+          { sampledAt: sampledAt - 10 * 60_000, usedPercent: 20, resetsAt: baseWindow.resetsAt },
+          { sampledAt, usedPercent: 60, resetsAt: baseWindow.resetsAt },
+        ],
+      }}
+      sampledAt={sampledAt}
+    />);
+
+    const chart = screen.getByRole("img", { name: "5時間の使用制限の残量観測と予測" });
+    expect(chart).toBeInTheDocument();
+    expect(chart.querySelector(".recharts-area-curve")).toBeInTheDocument();
+    expect(chart.querySelector(".recharts-line-curve")).toBeInTheDocument();
+    expect(screen.getByText("観測残量")).toBeInTheDocument();
+    expect(screen.getByText("予測残量")).toBeInTheDocument();
+    expect(screen.getByText("枯渇予測")).toBeInTheDocument();
+  });
+
   it("shows depletion halfway to reset instead of at reset", () => {
-    const { container } = render(<RemainingProjection window={baseWindow} sampledAt={sampledAt} />);
-    const line = container.querySelector('[data-testid="projection-line"]');
-    expect(line).toHaveAttribute("x2", "169");
-    expect(line).toHaveAttribute("y2", "112");
+    render(<RemainingProjection window={baseWindow} sampledAt={sampledAt} />);
+
+    expect(screen.getByRole("img", { name: "5時間の使用制限の残量観測と予測" })).toBeInTheDocument();
+    expect(screen.getByText("枯渇予測")).toBeInTheDocument();
     expect(screen.getByText("推定：リセット前に残量0%")).toBeInTheDocument();
   });
 
@@ -43,7 +65,7 @@ describe("RemainingProjection", () => {
       } }}
       sampledAt={sampledAt}
     />);
-    expect(screen.queryByTestId("projection-line")).not.toBeInTheDocument();
+    expect(screen.queryByText("予測残量")).not.toBeInTheDocument();
     expect(screen.getByText("予測に十分なデータが集まると破線を表示します。")).toBeInTheDocument();
   });
 });

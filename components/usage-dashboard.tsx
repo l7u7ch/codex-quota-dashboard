@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/
 import { Progress } from "@/components/ui/progress";
 import { RemainingProjection } from "@/components/remaining-projection";
 import type { UsageForecastAccount, UsageForecastResponse, UsageForecastWindow } from "@/lib/usage/types";
-import type { UsageForecastStatus, UsageSample } from "@/lib/usage/forecast";
+import type { UsageForecastStatus } from "@/lib/usage/forecast";
 
 const DEFAULT_REFRESH_INTERVAL_MS = 5 * 60 * 1_000;
 
@@ -68,68 +68,17 @@ function formatSampledAt(sampledAt: number) {
   }).format(new Date(sampledAt));
 }
 
-function UsageTrend({ label, samples }: { label: string; samples: UsageSample[] }) {
-  const points = samples.slice(-13);
-  if (points.length < 2) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        推移グラフは複数回の観測後に表示します。
-      </p>
-    );
-  }
-
-  const firstAt = points[0].sampledAt;
-  const duration = Math.max(1, points[points.length - 1].sampledAt - firstAt);
-  const polyline = points
-    .map((point) => {
-      const x = ((point.sampledAt - firstAt) / duration) * 100;
-      const y = 38 - (point.usedPercent / 100) * 34;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const lastPoint = points[points.length - 1];
-  const lastX = ((lastPoint.sampledAt - firstAt) / duration) * 100;
-  const lastY = 38 - (lastPoint.usedPercent / 100) * 34;
-
-  return (
-    <div className="space-y-1">
-      <svg
-        role="img"
-        aria-label={`${label}の使用率推移`}
-        viewBox="0 0 100 40"
-        preserveAspectRatio="none"
-        className="h-14 w-full overflow-visible text-sky-400"
-      >
-        <line x1="0" y1="4" x2="100" y2="4" stroke="currentColor" strokeOpacity="0.12" />
-        <line x1="0" y1="21" x2="100" y2="21" stroke="currentColor" strokeOpacity="0.12" />
-        <line x1="0" y1="38" x2="100" y2="38" stroke="currentColor" strokeOpacity="0.12" />
-        <polyline
-          points={polyline}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          vectorEffect="non-scaling-stroke"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        <circle cx={lastX} cy={lastY} r="1.8" fill="currentColor" />
-      </svg>
-      <div className="flex justify-between text-[11px] text-muted-foreground">
-        <span>{formatDuration((points[points.length - 1].sampledAt - firstAt) / 60_000)}前</span>
-        <span>現在</span>
-      </div>
-    </div>
-  );
-}
-
 function WindowForecast({ window, sampledAt }: { window: UsageForecastWindow; sampledAt: number }) {
   const presentation = forecastPresentation[window.forecast.status];
   const resetMinutes = (window.resetsAt * 1_000 - sampledAt) / 60_000;
   const minutesUntilPrediction = Math.max(0, 10 - window.forecast.observedMinutes);
 
   return (
-    <section className="grid gap-5 rounded-lg border border-border/70 bg-muted/10 p-4 md:grid-cols-[minmax(0,1fr)_minmax(14rem,0.8fr)]">
-      <div className="space-y-3">
+    <section className="grid gap-5 rounded-lg border border-border/70 bg-muted/10 p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(14rem,0.75fr)]">
+      <div>
+        <RemainingProjection window={window} sampledAt={sampledAt} />
+      </div>
+      <div className="space-y-3 border-t border-border/60 pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="font-medium">{window.label}</h3>
@@ -153,13 +102,6 @@ function WindowForecast({ window, sampledAt }: { window: UsageForecastWindow; sa
             {presentation.label}
           </Badge>
           <ForecastDetails window={window} minutesUntilPrediction={minutesUntilPrediction} />
-        </div>
-      </div>
-      <div className="space-y-4 border-t border-border/60 pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
-        <RemainingProjection window={window} sampledAt={sampledAt} />
-        <div className="space-y-2 border-t border-border/60 pt-3">
-          <p className="text-xs font-medium text-muted-foreground">観測された使用率</p>
-          <UsageTrend label={window.label} samples={window.samples} />
         </div>
       </div>
     </section>
