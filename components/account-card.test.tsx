@@ -56,6 +56,18 @@ describe("AccountCard", () => {
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
   });
 
+  it("shows the ChatGPT logo before the account name", () => {
+    const { container } = renderAccount();
+    const card = within(container);
+    const logo = card.getByRole("img", { name: "ChatGPT" });
+    const accountName = card.getByText("me@example.com");
+
+    expect(logo.tagName.toLowerCase()).toBe("svg");
+    expect(
+      logo.compareDocumentPosition(accountName) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("shows a custom display name while keeping the email visible", () => {
     const { container } = renderAccount({ ...account, displayName: "Work account" });
     const card = within(container);
