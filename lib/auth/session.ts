@@ -3,7 +3,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { AuthConfig } from "@/lib/auth/auth-store";
 import { isValidPassword } from "@/lib/auth/auth-store";
 
-const SESSION_LIFETIME_MS = 8 * 60 * 60 * 1_000;
+// Absolute lifetime from login; activity does not extend a session.
+export const SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
+const SESSION_LIFETIME_MS = SESSION_LIFETIME_SECONDS * 1_000;
 export const SESSION_COOKIE_NAME = "codex-quota-session";
 
 export function isValidCredential(id: string, password: string, auth: AuthConfig) {

@@ -4,6 +4,7 @@ import {
   createSession,
   isValidCredential,
   SESSION_COOKIE_NAME,
+  SESSION_LIFETIME_SECONDS,
 } from "@/lib/auth/session";
 import { getAuthStore } from "@/lib/auth/auth-store";
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE_NAME, createSession(auth), {
     httpOnly: true,
-    maxAge: 8 * 60 * 60,
+    maxAge: SESSION_LIFETIME_SECONDS,
     path: "/",
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

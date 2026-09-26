@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, LoaderCircle, LogOut, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -50,11 +50,24 @@ export function Dashboard({
   );
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [login, setLogin] = useState<LoginPrompt | null>(null);
+  const sessionExpiryRedirected = useRef(false);
+
+  const fetchAuthenticated = useCallback(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await fetch(input, init);
+      if (response.status === 401 && !sessionExpiryRedirected.current) {
+        sessionExpiryRedirected.current = true;
+        router.replace("/login");
+      }
+      return response;
+    },
+    [router],
+  );
 
   const refresh = useCallback(async (quiet = false) => {
     if (!quiet) setRefreshing(true);
     try {
-      const response = await fetch("/api/accounts", { cache: "no-store" });
+      const response = await fetchAuthenticated("/api/accounts", { cache: "no-store" });
       if (!response.ok) throw new Error("request failed");
       const body = (await response.json()) as { accounts: AccountUsage[] };
       setAccounts(body.accounts);
@@ -63,7 +76,7 @@ export function Dashboard({
     } finally {
       if (!quiet) setRefreshing(false);
     }
-  }, []);
+  }, [fetchAuthenticated]);
 
   useEffect(() => {
     const timer = window.setInterval(() => void refresh(true), 60_000);
@@ -73,7 +86,7 @@ export function Dashboard({
   const discardLogin = useCallback(
     async (loginToDiscard: LoginPrompt) => {
       try {
-        const response = await fetch(
+        const response = await fetchAuthenticated(
           `/api/accounts/${loginToDiscard.accountId}/login/${loginToDiscard.loginId}`,
           { method: "DELETE" },
         );
@@ -82,13 +95,13 @@ export function Dashboard({
         toast.error("ログイン処理を中断できませんでした");
       }
     },
-    [refresh],
+    [fetchAuthenticated, refresh],
   );
 
   useEffect(() => {
     if (!login) return;
     const timer = window.setInterval(async () => {
-      const response = await fetch(
+      const response = await fetchAuthenticated(
         `/api/accounts/${login.accountId}/login/${login.loginId}`,
         { cache: "no-store" },
       );
@@ -116,13 +129,13 @@ export function Dashboard({
       }
     }, 1_500);
     return () => window.clearInterval(timer);
-  }, [discardLogin, login, refresh]);
+  }, [discardLogin, fetchAuthenticated, login, refresh]);
 
   async function addAccount() {
     setLogin(null);
     setSubmitting(true);
     try {
-      const response = await fetch("/api/accounts", {
+      const response = await fetchAuthenticated("/api/accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({}),
@@ -148,7 +161,7 @@ export function Dashboard({
     if (login) return;
     setActionPendingId(account.id);
     try {
-      const response = await fetch(`/api/accounts/${account.id}/login`, {
+      const response = await fetchAuthenticated(`/api/accounts/${account.id}/login`, {
         method: "POST",
       });
       const result = (await response.json()) as LoginPrompt & {
@@ -173,7 +186,7 @@ export function Dashboard({
     setSavingDisplayName(true);
     try {
       const displayName = displayNameInput.trim() || null;
-      const response = await fetch(`/api/accounts/${renamingAccount.id}`, {
+      const response = await fetchAuthenticated(`/api/accounts/${renamingAccount.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ displayName }),
@@ -204,7 +217,7 @@ export function Dashboard({
     if (!accountToDelete) return;
     setDeletingAccount(true);
     try {
-      const response = await fetch(`/api/accounts/${accountToDelete.id}`, {
+      const response = await fetchAuthenticated(`/api/accounts/${accountToDelete.id}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -240,7 +253,7 @@ export function Dashboard({
 
     setActionPendingId(accountId);
     try {
-      const response = await fetch("/api/accounts", {
+      const response = await fetchAuthenticated("/api/accounts", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

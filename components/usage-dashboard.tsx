@@ -67,15 +67,21 @@ export function UsageDashboard() {
   const [data, setData] = useState<UsageForecastResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshError, setRefreshError] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const refreshInFlight = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (refreshInFlight.current) return;
+    if (refreshInFlight.current || sessionExpired) return;
     refreshInFlight.current = true;
     setRefreshing(true);
     try {
       const response = await fetch("/api/usage", { cache: "no-store" });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        setRefreshError(false);
+        return;
+      }
       if (!response.ok) throw new Error("Usage request failed");
       const result = (await response.json()) as UsageForecastResponse;
       setData(result);
@@ -87,20 +93,22 @@ export function UsageDashboard() {
       setRefreshing(false);
       setLoading(false);
     }
-  }, []);
+  }, [sessionExpired]);
 
   useEffect(() => {
+    if (sessionExpired) return;
     const initialRefresh = window.setTimeout(() => void refresh(), 0);
     return () => window.clearTimeout(initialRefresh);
-  }, [refresh]);
+  }, [refresh, sessionExpired]);
 
   useEffect(() => {
+    if (sessionExpired) return;
     const interval = window.setInterval(
       () => void refresh(),
       data?.refreshIntervalMs ?? DEFAULT_REFRESH_INTERVAL_MS,
     );
     return () => window.clearInterval(interval);
-  }, [data?.refreshIntervalMs, refresh]);
+  }, [data?.refreshIntervalMs, refresh, sessionExpired]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl space-y-7 px-5 py-8 sm:px-8 lg:px-10">
@@ -118,7 +126,9 @@ export function UsageDashboard() {
           </Link>
         </div>
         <div className="text-sm text-muted-foreground" role="status" aria-live="polite">
-          {refreshing ? (
+          {sessionExpired ? (
+            <span>再ログインが必要です</span>
+          ) : refreshing ? (
             <span className="flex items-center gap-2">
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
               利用状況を更新中
@@ -137,24 +147,35 @@ export function UsageDashboard() {
         </div>
       ) : null}
 
-      <section aria-label="アカウント別の利用予測" className="space-y-4">
-        {loading && !data ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">利用状況を取得しています…</p>
-        ) : data?.accounts.length ? (
-          data.accounts.map((account) => (
-            <AccountForecast key={account.id} account={account} sampledAt={data.sampledAt} />
-          ))
-        ) : data ? (
-          <div className="rounded-lg border border-dashed px-6 py-12 text-center">
-            <p className="font-medium">予測対象のアカウントがありません</p>
-            <p className="mt-1 text-sm text-muted-foreground">登録済みアカウントがあると利用ペースを表示します。</p>
-          </div>
-        ) : null}
-      </section>
+      {sessionExpired ? (
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          ログインの有効期限が切れました。{" "}
+          <Link href="/login" className="font-medium underline underline-offset-4">
+            再ログイン
+          </Link>
+        </div>
+      ) : (
+        <section aria-label="アカウント別の利用予測" className="space-y-4">
+          {loading && !data ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">利用状況を取得しています…</p>
+          ) : data?.accounts.length ? (
+            data.accounts.map((account) => (
+              <AccountForecast key={account.id} account={account} sampledAt={data.sampledAt} />
+            ))
+          ) : data ? (
+            <div className="rounded-lg border border-dashed px-6 py-12 text-center">
+              <p className="font-medium">予測対象のアカウントがありません</p>
+              <p className="mt-1 text-sm text-muted-foreground">登録済みアカウントがあると利用ペースを表示します。</p>
+            </div>
+          ) : null}
+        </section>
+      )}
 
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        予測は直近1時間の利用率の傾向に基づく目安です。十分な観測データが集まるまでは予測を表示しません。
-      </p>
+      {!sessionExpired ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          予測は直近1時間の利用率の傾向に基づく目安です。十分な観測データが集まるまでは予測を表示しません。
+        </p>
+      ) : null}
     </main>
   );
 }

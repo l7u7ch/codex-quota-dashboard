@@ -94,6 +94,22 @@ describe("Dashboard", () => {
     });
   });
 
+  it("redirects to sign in when a protected dashboard request returns 401", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "認証が必要です" }),
+      }),
+    );
+
+    render(<Dashboard initialAccounts={accounts} />);
+    fireEvent.click(screen.getByRole("button", { name: "アカウントを追加" }));
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/login"));
+  });
+
   it("starts login directly when adding an account", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

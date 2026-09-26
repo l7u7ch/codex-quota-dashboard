@@ -151,4 +151,16 @@ describe("UsageDashboard", () => {
 
     expect(await screen.findByText("予測対象のアカウントがありません")).toBeInTheDocument();
   });
+
+  it("guides the user to log in again when the session has expired", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 401 }),
+    );
+    render(<UsageDashboard />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("ログインの有効期限が切れました");
+    expect(screen.getByRole("link", { name: "再ログイン" })).toHaveAttribute("href", "/login");
+    expect(screen.queryByText("利用状況を取得できませんでした。次回の自動更新で再試行します。")).not.toBeInTheDocument();
+  });
 });
