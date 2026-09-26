@@ -29,6 +29,44 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
+function getRemainingAxisScale(chartData: ProjectionChartPoint[]) {
+  const values = chartData
+    .flatMap(({ observedRemainingPercent, forecastRemainingPercent }) => [
+      observedRemainingPercent,
+      forecastRemainingPercent,
+    ])
+    .filter((value): value is number => value !== null);
+
+  if (!values.length) {
+    return { domain: [0, 100] as [number, number], ticks: [0, 25, 50, 75, 100] };
+  }
+
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  const padding = Math.max((dataMax - dataMin) * 0.12, 2);
+  let min = Math.max(0, dataMin - padding);
+  let max = Math.min(100, dataMax + padding);
+
+  if (max - min < 10) {
+    const center = (min + max) / 2;
+    min = Math.max(0, center - 5);
+    max = Math.min(100, center + 5);
+    if (max - min < 10) {
+      if (min === 0) max = 10;
+      else min = 90;
+    }
+  }
+
+  const span = max - min;
+  const step = span <= 12 ? 2 : span <= 25 ? 5 : span <= 50 ? 10 : span <= 80 ? 20 : 25;
+  const domainMin = Math.max(0, Math.floor(min / step) * step);
+  const domainMax = Math.min(100, Math.ceil(max / step) * step);
+  const ticks: number[] = [];
+  for (let value = domainMin; value <= domainMax; value += step) ticks.push(value);
+
+  return { domain: [domainMin, domainMax] as [number, number], ticks };
+}
+
 function formatElapsed(milliseconds: number) {
   const minutes = Math.max(1, Math.round(milliseconds / MINUTE_MS));
   const hours = Math.floor(minutes / 60);
@@ -113,6 +151,7 @@ export function RemainingProjection({ window, sampledAt }: Props) {
     }
   }
   chartData.sort((left, right) => left.sampledAt - right.sampledAt);
+  const remainingAxisScale = getRemainingAxisScale(chartData);
 
   const chartEnd = Math.max(sampledAt, resetMs);
   const firstObservation = chartData.find((point) => point.observedRemainingPercent !== null)?.sampledAt;
@@ -178,8 +217,8 @@ export function RemainingProjection({ window, sampledAt }: Props) {
               allowDataOverflow
             />
             <YAxis
-              domain={[0, 100]}
-              ticks={[0, 25, 50, 75, 100]}
+              domain={remainingAxisScale.domain}
+              ticks={remainingAxisScale.ticks}
               tickFormatter={(value: number) => `${value}%`}
               tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
               tickLine={false}

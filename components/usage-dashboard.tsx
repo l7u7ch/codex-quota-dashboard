@@ -6,56 +6,10 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { RemainingProjection } from "@/components/remaining-projection";
-import type { UsageForecastAccount, UsageForecastResponse, UsageForecastWindow } from "@/lib/usage/types";
-import type { UsageForecastStatus } from "@/lib/usage/forecast";
+import type { UsageForecastAccount, UsageForecastResponse } from "@/lib/usage/types";
 
 const DEFAULT_REFRESH_INTERVAL_MS = 5 * 60 * 1_000;
-
-const forecastPresentation: Record<UsageForecastStatus, { label: string; className: string }> = {
-  "at-risk": {
-    label: "リセット前に上限到達の可能性",
-    className: "border-destructive/50 bg-destructive/10 text-destructive",
-  },
-  "on-track": {
-    label: "今のペースならリセット前に余裕あり",
-    className: "border-green-500/40 bg-green-500/10 text-green-300",
-  },
-  steady: {
-    label: "直近では利用増加を観測していません",
-    className: "border-border bg-muted/50 text-muted-foreground",
-  },
-  collecting: {
-    label: "予測材料不足",
-    className: "border-border bg-muted/50 text-muted-foreground",
-  },
-  depleted: {
-    label: "利用枠を使い切っています",
-    className: "border-destructive/50 bg-destructive/10 text-destructive",
-  },
-  "reset-due": {
-    label: "利用枠のリセット時刻を過ぎています",
-    className: "border-border bg-muted/50 text-muted-foreground",
-  },
-};
-
-function formatPercent(value: number) {
-  return new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 }).format(value);
-}
-
-function formatDuration(minutes: number) {
-  const roundedMinutes = Math.max(0, Math.round(minutes));
-  const days = Math.floor(roundedMinutes / (24 * 60));
-  const hours = Math.floor((roundedMinutes % (24 * 60)) / 60);
-  const remainingMinutes = roundedMinutes % 60;
-  const parts = [
-    days ? `${days}日` : "",
-    hours ? `${hours}時間` : "",
-    remainingMinutes ? `${remainingMinutes}分` : "",
-  ].filter(Boolean);
-  return parts.length ? parts.join("") : "1分未満";
-}
 
 function formatSampledAt(sampledAt: number) {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -66,94 +20,6 @@ function formatSampledAt(sampledAt: number) {
     hour12: false,
     timeZone: "Asia/Tokyo",
   }).format(new Date(sampledAt));
-}
-
-function WindowForecast({ window, sampledAt }: { window: UsageForecastWindow; sampledAt: number }) {
-  const presentation = forecastPresentation[window.forecast.status];
-  const resetMinutes = (window.resetsAt * 1_000 - sampledAt) / 60_000;
-  const minutesUntilPrediction = Math.max(0, 10 - window.forecast.observedMinutes);
-
-  return (
-    <section className="grid gap-5 rounded-lg border border-border/70 bg-muted/10 p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(14rem,0.75fr)]">
-      <div>
-        <RemainingProjection window={window} sampledAt={sampledAt} />
-      </div>
-      <div className="space-y-3 border-t border-border/60 pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="font-medium">{window.label}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              リセットまで {formatDuration(resetMinutes)}
-            </p>
-          </div>
-          <p className="shrink-0 text-right text-2xl font-semibold tabular-nums">
-            {window.remainingPercent}%
-            <span className="ml-1 text-xs font-normal text-muted-foreground">残り</span>
-          </p>
-        </div>
-        <Progress
-          value={window.remainingPercent}
-          className="h-2 bg-muted"
-          indicatorClassName="bg-sky-500"
-          aria-label={`${window.label} ${window.remainingPercent}% 残り`}
-        />
-        <div className="space-y-1">
-          <Badge variant="outline" className={presentation.className}>
-            {presentation.label}
-          </Badge>
-          <ForecastDetails window={window} minutesUntilPrediction={minutesUntilPrediction} />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ForecastDetails({
-  window,
-  minutesUntilPrediction,
-}: {
-  window: UsageForecastWindow;
-  minutesUntilPrediction: number;
-}) {
-  const forecast = window.forecast;
-  if (forecast.status === "collecting") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {minutesUntilPrediction > 0
-          ? `あと約${minutesUntilPrediction}分、最低10分の観測が必要です。`
-          : "観測データが不安定なため、予測を保留しています。"}
-      </p>
-    );
-  }
-  if (forecast.status === "reset-due") {
-    return <p className="text-sm text-muted-foreground">次の利用状況取得で予測を更新します。</p>;
-  }
-  if (forecast.status === "depleted") {
-    return <p className="text-sm text-muted-foreground">利用状況を更新して、リセット後の残量をご確認ください。</p>;
-  }
-  if (forecast.status === "steady") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {forecast.remainingAtResetPercent}%程度の残量でリセットを迎える見込みです。
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-1 text-sm text-muted-foreground">
-      <p>
-        消費ペース <span className="font-medium text-foreground">{formatPercent(forecast.consumptionPercentPerHour ?? 0)}%/時間</span>
-      </p>
-      {forecast.minutesUntilDepletion !== null ? (
-        <p>
-          上限到達まで推定あと <span className="font-medium text-foreground">{formatDuration(forecast.minutesUntilDepletion)}</span>
-        </p>
-      ) : null}
-      <p>
-        リセット時予測残量 <span className="font-medium text-foreground">{forecast.remainingAtResetPercent}%</span>
-      </p>
-    </div>
-  );
 }
 
 function AccountForecast({ account, sampledAt }: { account: UsageForecastAccount; sampledAt: number }) {
@@ -174,7 +40,12 @@ function AccountForecast({ account, sampledAt }: { account: UsageForecastAccount
         {account.status === "ready" ? (
           account.windows.length ? (
             account.windows.map((window) => (
-              <WindowForecast key={window.id} window={window} sampledAt={sampledAt} />
+              <section
+                key={window.id}
+                className="rounded-lg border border-border/70 bg-muted/10 p-4"
+              >
+                <RemainingProjection window={window} sampledAt={sampledAt} />
+              </section>
             ))
           ) : (
             <p className="text-sm text-muted-foreground">利用枠の情報がありません。</p>

@@ -21,6 +21,16 @@ const baseWindow: UsageForecastWindow = {
     remainingAtResetPercent: 0,
   },
 };
+const lowRemainingWindow: UsageForecastWindow = {
+  ...baseWindow,
+  remainingPercent: 7,
+  forecast: {
+    ...baseWindow.forecast,
+    status: "on-track",
+    minutesUntilDepletion: null,
+    remainingAtResetPercent: 7,
+  },
+};
 
 afterEach(() => cleanup());
 
@@ -53,6 +63,13 @@ describe("RemainingProjection", () => {
     expect(screen.getByRole("img", { name: "5時間の使用制限の残量観測と予測" })).toBeInTheDocument();
     expect(screen.getByText("枯渇予測")).toBeInTheDocument();
     expect(screen.getByText("推定：リセット前に残量0%")).toBeInTheDocument();
+  });
+
+  it("zooms the remaining axis when the plotted percentage is low", () => {
+    render(<RemainingProjection window={lowRemainingWindow} sampledAt={sampledAt} />);
+
+    expect(screen.getByText("10%")).toBeInTheDocument();
+    expect(screen.queryByText("100%")).not.toBeInTheDocument();
   });
 
   it("omits the extrapolation when the forecast is still collecting", () => {

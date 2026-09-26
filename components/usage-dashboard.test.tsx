@@ -64,22 +64,22 @@ describe("UsageDashboard", () => {
     expect(await screen.findByRole("link", { name: "アカウント管理に戻る" })).toHaveAttribute("href", "/");
   });
 
-  it("shows per-account forecasts with observations in the combined chart", async () => {
+  it("shows the forecast chart without a separate quota summary panel", async () => {
     stubUsageResponse();
     render(<UsageDashboard />);
 
     expect(await screen.findByRole("heading", { name: "Work" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "利用ペース予測" })).toBeInTheDocument();
-    expect(screen.getByText("今のペースならリセット前に余裕あり")).toBeInTheDocument();
-    expect(screen.getByText("リセットまで 1時間")).toBeInTheDocument();
-    expect(screen.getByText("60%/時間")).toBeInTheDocument();
-    expect(screen.getByText("リセット時予測残量")).toBeInTheDocument();
-    expect(screen.getByText("10%")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "5時間の使用制限の残量観測と予測" })).toBeInTheDocument();
     expect(screen.getByText("観測残量")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "5時間の使用制限" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(screen.queryByText("リセットまで 1時間")).not.toBeInTheDocument();
+    expect(screen.queryByText("リセット時予測残量")).not.toBeInTheDocument();
+    expect(screen.queryByText("今のペースならリセット前に余裕あり")).not.toBeInTheDocument();
   });
 
-  it("prioritizes the forecast projection over account details", async () => {
+  it("keeps the forecast projection as the primary per-window display", async () => {
     stubUsageResponse();
     render(<UsageDashboard />);
 
@@ -93,11 +93,8 @@ describe("UsageDashboard", () => {
     expect(screen.getByText("予測残量")).toBeInTheDocument();
     expect(screen.queryByText("観測された使用率")).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: "5時間の使用制限の使用率推移" })).not.toBeInTheDocument();
-    expect(
-      projection.compareDocumentPosition(
-        screen.getByRole("heading", { name: "5時間の使用制限" }),
-      ) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "5時間の使用制限" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
   it("says it is still collecting observations instead of implying a forecast", async () => {
@@ -140,8 +137,12 @@ describe("UsageDashboard", () => {
 
     render(<UsageDashboard />);
 
-    expect(await screen.findByText("予測材料不足")).toBeInTheDocument();
-    expect(screen.getByText(/最低10分の観測が必要/)).toBeInTheDocument();
+    expect(await screen.findByRole("img", {
+      name: "5時間の使用制限の残量観測（予測未表示）",
+    })).toBeInTheDocument();
+    expect(screen.queryByText("予測材料不足")).not.toBeInTheDocument();
+    expect(screen.queryByText(/最低10分の観測が必要/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
   it("keeps the page usable when there are no registered accounts", async () => {

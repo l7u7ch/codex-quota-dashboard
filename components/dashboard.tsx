@@ -243,10 +243,14 @@ export function Dashboard({
       const response = await fetch("/api/accounts", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ accountIds: reorderedAccounts.map((account) => account.id) }),
+        body: JSON.stringify({
+          accountIds: reorderedAccounts.map((account) => account.id),
+        }),
       });
       if (!response.ok) {
-        const result = (await response.json().catch(() => null)) as { error?: string } | null;
+        const result = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
         throw new Error(result?.error);
       }
       setAccounts(reorderedAccounts);
@@ -293,9 +297,9 @@ export function Dashboard({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Button asChild variant="outline">
-              <Link href="/usage">利用ペース予測</Link>
-            </Button>
+            {/* <Button asChild variant="outline"> */}
+            {/* <Link href="/usage">利用ペース予測</Link> */}
+            {/* </Button> */}
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -454,7 +458,9 @@ export function Dashboard({
                       canMoveUp={index > 0}
                       canMoveDown={index < accounts.length - 1}
                       onMoveUp={(selected) => void moveAccount(selected.id, -1)}
-                      onMoveDown={(selected) => void moveAccount(selected.id, 1)}
+                      onMoveDown={(selected) =>
+                        void moveAccount(selected.id, 1)
+                      }
                       onRename={(selected) => {
                         setRenamingAccount(selected);
                         setDisplayNameInput(selected.displayName ?? "");
