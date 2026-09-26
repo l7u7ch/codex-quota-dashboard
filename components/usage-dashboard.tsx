@@ -115,7 +115,7 @@ export function UsageDashboard() {
       <header className="flex flex-col gap-4 border-b border-border/70 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-            Codex Usage
+            AI Usage Monitor
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">利用ペース予測</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">

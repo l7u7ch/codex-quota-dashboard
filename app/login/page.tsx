@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-// export const metadata = { title: "ログイン | Codex Quota Dashboard" };
+// export const metadata = { title: "ログイン | AI Usage Monitor" };
 
 export default async function LoginPage() {
   const auth = await getAuthStore().read();

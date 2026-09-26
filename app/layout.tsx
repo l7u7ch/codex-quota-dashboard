@@ -5,7 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "Codex Quota Dashboard",
+  title: "AI Usage Monitor",
   description: "複数のChatGPTアカウントのCodex利用枠を可視化します。",
 };
 

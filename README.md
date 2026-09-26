@@ -1,4 +1,4 @@
-# Codex Quota Dashboard
+# AI Usage Monitor
 
 ## Dokploy deployment
 

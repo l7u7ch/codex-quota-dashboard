@@ -37,8 +37,8 @@ export class JsonRpcConnection extends EventEmitter {
   async initialize() {
     await this.request("initialize", {
       clientInfo: {
-        name: "codex_usage_dashboard",
-        title: "Codex Quota Dashboard",
+        name: "ai_usage_monitor",
+        title: "AI Usage Monitor",
         version: "0.1.0",
       },
     });

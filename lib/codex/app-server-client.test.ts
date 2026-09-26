@@ -30,6 +30,11 @@ describe("JsonRpcConnection", () => {
     const initialization = connection.initialize();
     const initializeRequest = await nextLine();
     expect(initializeRequest.method).toBe("initialize");
+    expect(initializeRequest.params.clientInfo).toEqual({
+      name: "ai_usage_monitor",
+      title: "AI Usage Monitor",
+      version: "0.1.0",
+    });
     fromServer.write(`${JSON.stringify({ id: initializeRequest.id, result: { userAgent: "codex" } })}\n`);
     await initialization;
 

@@ -306,7 +306,7 @@ export function Dashboard({
         <div className="mx-auto flex min-h-16 w-full max-w-[1500px] flex-wrap items-center justify-between gap-3 px-6 py-3 lg:px-10">
           <div className="flex items-baseline gap-3">
             <p className="text-sm font-semibold tracking-[0.16em]">
-              Codex Quota Dashboard
+              AI Usage Monitor
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">

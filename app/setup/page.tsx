@@ -3,7 +3,7 @@ import { getAuthStore } from "@/lib/auth/auth-store";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-// export const metadata = { title: "初期アカウント作成 | Codex Quota Dashboard" };
+// export const metadata = { title: "初期アカウント作成 | AI Usage Monitor" };
 
 export default async function SetupPage() {
   if (await getAuthStore().read()) redirect("/login");
